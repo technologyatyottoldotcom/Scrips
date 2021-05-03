@@ -19,7 +19,7 @@ import { CrossHairCursor, MouseCoordinateX, MouseCoordinateY } from "react-stock
 import {sma20,wma20,ema20,tma20,bb,macdCalculator,rsiCalculator,atrCalculator,slowSTO,fastSTO,fullSTO,fi,fiEMA,elder,elderImpulseCalculator,defaultSar,changeCalculator,compareCalculator} from '../../exports/MathematicalIndicators';
 import {TrendLineAppearance,EquidistantChannelAppearance,StandardDeviationChannelAppearance,FibRetAppearance,GannFanAppearance} from '../../exports/InteractiveAppearance';
 
-export class StockChart extends React.Component {
+export class StockChart extends React.PureComponent {
 
 
     constructor(props)
@@ -452,6 +452,8 @@ export class StockChart extends React.Component {
 
 
     render() {
+
+        console.log('Rendering StockChart....');
 
         const {data : initialData ,type,width,height,ratio,range,zoom,chartType,TotalCharts,IndicatorChartTypeArray,trendLineType} = this.props;
 

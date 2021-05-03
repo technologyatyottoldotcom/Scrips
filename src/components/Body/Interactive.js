@@ -1,6 +1,6 @@
 import React from 'react';
 
-export class Interactive extends React.Component {
+export class Interactive extends React.PureComponent {
     render() {
 
         const {IImage,Name,Itype,Stype,changeInteractive} = this.props;

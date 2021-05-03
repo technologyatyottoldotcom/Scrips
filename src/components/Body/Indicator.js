@@ -1,6 +1,6 @@
 import React from 'react';
 
-export class Indicator extends React.Component {
+export class Indicator extends React.PureComponent {
     render() {
 
         const {IndicatorName,IndicatorInfo,IndicatorType,InfoType} = this.props;

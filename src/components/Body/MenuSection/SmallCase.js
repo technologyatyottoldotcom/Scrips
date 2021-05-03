@@ -9,7 +9,7 @@ import SettingsGears from '../../../assets/icons/settings-gears.svg';
 import ChevronDown from '../../../assets/icons/ChevronDown.svg';
 import Objective from '../../../assets/icons/objective.svg';
 
-class SmallCase extends React.Component {
+class SmallCase extends React.PureComponent {
     constructor(props) {
         super(props);
         this.state = {

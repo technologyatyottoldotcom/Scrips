@@ -10,7 +10,7 @@ const Title = _ => {
     </svg>
 }
 
-class Orders extends React.Component {
+class Orders extends React.PureComponent {
 
 
     constructor(props)

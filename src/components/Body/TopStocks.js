@@ -1,7 +1,7 @@
 import React from 'react';
 import UpperStock from './UpperStock';
 
-class TopStocks extends React.Component {
+class TopStocks extends React.PureComponent {
     render() {
 
         const {data , dataArray} = this.props;

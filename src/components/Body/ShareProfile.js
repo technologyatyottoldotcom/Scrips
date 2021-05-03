@@ -1,6 +1,6 @@
 import React from 'react'
 
-export class ShareProfile extends React.Component {
+export class ShareProfile extends React.PureComponent {
     render() {
 
         const {code,name,shares,value,change} = this.props;

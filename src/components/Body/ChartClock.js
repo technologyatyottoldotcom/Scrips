@@ -1,6 +1,6 @@
 import React from 'react';
 
-class ChartClock extends React.Component
+class ChartClock extends React.PureComponent
 {
 
     constructor(props)

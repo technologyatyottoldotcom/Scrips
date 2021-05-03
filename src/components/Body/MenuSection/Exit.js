@@ -1,6 +1,6 @@
 import React from 'react';
 
-class Exit extends React.Component {
+class Exit extends React.PureComponent {
     render() {
         return (
             <div>

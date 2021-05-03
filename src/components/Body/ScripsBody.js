@@ -25,7 +25,7 @@ import 'rsuite/dist/styles/rsuite-default.css';
 
 
 
-class ScripsBody extends React.Component
+class ScripsBody extends React.PureComponent
 {
 
     constructor(props)
@@ -224,6 +224,7 @@ class ScripsBody extends React.Component
     render()
     {
 
+        console.log('Rendering ScripsBody ...');
 
         let activeElement = this.props.active?.toLowerCase().replace(/ /g, '');
 
@@ -315,13 +316,11 @@ class ScripsBody extends React.Component
                         <ChartContainer 
                             data={this.state.chartdata} 
                             stockData={this.state.stockData} 
-                            stockName={this.props.stockDetails.stockName}
-                            stockSymbol={this.state.stockDetails.stockSymbol}
                             stockDetails={this.state.stockDetails}
                             isLoaded={this.state.isLoaded}
                         />
                         <StocksToWatch />
-                        <KeyStatistics stockData={this.state.stockData}/>
+                        <KeyStatistics stockData={this.state.stockData} snapdata={this.state.snapdata}/>
                     </div>
                     <div className="app__body__right">
                         <CashPosition />

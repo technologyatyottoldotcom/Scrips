@@ -6,7 +6,7 @@ import Hand from '../../assets/icons/hand.svg';
 import Eraser from '../../assets/icons/eraser.svg';
 
 
-class PortfolioView extends React.Component {
+class PortfolioView extends React.PureComponent {
 
     CashPos() {
         return (

@@ -2,7 +2,7 @@ import React from 'react';
 import $ from 'jquery';
 import UpperStockChart from './UpperStockChart';
 
-export class UpperStock extends React.Component {
+export class UpperStock extends React.PureComponent {
 
     constructor(props)
     {

@@ -1,7 +1,7 @@
 import React from 'react';
 import Logout from '../../assets/icons/logout.svg';
 
-export class ScripsFooter extends React.Component {
+export class ScripsFooter extends React.PureComponent {
     render() {
         return (
             <div className="app__footer">

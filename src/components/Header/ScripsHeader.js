@@ -4,7 +4,7 @@ import ScripsMenu from './ScripsMenu';
 import BrandLogo from '../../assets/icons/yottol.png';
 import Search from '../../assets/icons/search.svg';
 
-class StockSuggestion extends React.Component{
+class StockSuggestion extends React.PureComponent{
     constructor(props)
     {
         super(props)

@@ -1,6 +1,6 @@
-import React from 'react'
+import React from 'react';
 
-class AnimatedDigit extends React.Component {
+class AnimatedDigit extends React.PureComponent {
 
     render() {
 

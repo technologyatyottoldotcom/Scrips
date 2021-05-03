@@ -16,7 +16,7 @@ const SVGIMG = {
 
 const Portfolios = ['Growth Portfolio','Savings Portfolio'];
 
-class CashPosition extends React.Component {
+class CashPosition extends React.PureComponent {
 
     constructor(props)
     {

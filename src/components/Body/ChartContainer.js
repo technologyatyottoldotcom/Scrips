@@ -41,7 +41,7 @@ import Spinner from '../Loader/Spinner';
 
 
 
-export class ChartContainer extends React.Component {
+export class ChartContainer extends React.PureComponent {
 
 
     constructor(props)
@@ -428,6 +428,8 @@ export class ChartContainer extends React.Component {
 
     render() {
 
+        console.log('Rendering chart...');
+
         // console.log(this.props.data);
         let stockData = this.props.stockData;
 
@@ -582,7 +584,7 @@ export class ChartContainer extends React.Component {
                         <div className="stock__info">
                             <div className="stock__details">
                                 <p className="stock__name__code">
-                                    <span id="stock__code">{this.props.stockSymbol}</span>
+                                    <span id="stock__code">{this.props.stockDetails.stockSymbol}</span>
                                 </p>
                                 <div className="stock__type">
                                     <img src={SettingIcon} alt="s"/>
@@ -590,7 +592,7 @@ export class ChartContainer extends React.Component {
                                 </div>
                             </div>
                             <div id="stock__full__name">
-                                <span>{this.props.stockName}</span>
+                                <span>{this.props.stockDetails.stockName}</span>
                             </div>
                             <div className="stock__price__purchase">
                                 <div className="stock__price__details">

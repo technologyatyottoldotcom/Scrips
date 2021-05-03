@@ -2,7 +2,7 @@ import React from 'react';
 import {QuoteNav} from '../BusinessNews/QuoteNav';
 import Researchsvg from '../../../assets/icons/research.svg';
 
-class Research extends React.Component {
+class Research extends React.PureComponent {
     constructor(props) {
         super(props);
         this.state = {

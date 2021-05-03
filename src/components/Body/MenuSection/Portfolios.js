@@ -3,7 +3,7 @@ import Coin from '../../../assets/icons/coins.svg';
 import BriefCase from '../../../assets/icons/suitcase.svg';
 import ChevronDown from '../../../assets/icons/ChevronDown.svg';
 
-class Portfolios extends React.Component {
+class Portfolios extends React.PureComponent {
 
     CashPos() {
         return (

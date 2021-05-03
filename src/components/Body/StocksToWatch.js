@@ -32,7 +32,7 @@ const SVGIMG1 = {
     }
 }
 
-class StocksToWatch extends React.Component {
+class StocksToWatch extends React.PureComponent {
 
     
 

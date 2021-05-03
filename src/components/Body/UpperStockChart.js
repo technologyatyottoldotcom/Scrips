@@ -9,7 +9,7 @@ import {fitWidth} from 'react-stockcharts/lib/helper';
 import { last } from "react-stockcharts/lib/utils";
 
 
-export class UpperStockChart extends React.Component {
+export class UpperStockChart extends React.PureComponent {
 
     render() {
 

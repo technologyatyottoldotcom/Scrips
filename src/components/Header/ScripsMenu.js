@@ -1,6 +1,6 @@
 import React from 'react'
 
-export class ScripsMenu extends React.Component {
+export class ScripsMenu extends React.PureComponent {
 
     render() {
         const menuItems = ['Portfolios','Orders','smallCase','Research','Exit'];

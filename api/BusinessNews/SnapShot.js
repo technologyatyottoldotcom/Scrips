@@ -1,5 +1,6 @@
 const { conn } = require('../../server/connection');
-const { SendResponse } = require("./SendResponse")
+const { SendResponse } = require("./SendResponse");
+const { TrendLine } = require('../../src/exports/TrendLineCalculator');
 
 
 
@@ -736,6 +737,23 @@ class SnapShots {
             }
         }
     }
+
+    Beta()
+    {
+        const data = [
+            { y: 2, x: 1 },
+            { y: 4, x: 2 },
+            { y: 5, x: 3 },
+            { y: 4, x: 4 },
+            { y: 5, x: 5 },
+          ];
+           
+          // Takes the following arguments (dataset, xKey, yKey)
+          return TrendLine(data, 'x', 'y');
+
+          
+    }
+
 }
 
 const MYSQL = (data,func) => {
@@ -802,6 +820,7 @@ const StockSnapShot = (stock)=>{
             {                
     
                 var snp = new SnapShots(r);
+
     
                 resolve({
                     'MarketCap' : FormatValue(snp.MarketCap(),'Market_Cap','s'),
@@ -818,7 +837,8 @@ const StockSnapShot = (stock)=>{
                     'ROA_3YR' : FormatValue(snp.ROA_3YR(),'ROA_3YR','rs'),
                     'ROCE_TTM' : FormatValue(snp.ROCE_TTM(),'ROCE_TTM','rs'),
                     'ROCE_3YR' : FormatValue(snp.ROCE_3YR(),'ROCE_3YR','rs'),
-                    'CurrentRatio' : FormatValue(snp.CurrentRatio(),'Current_Ratio','s')
+                    'CurrentRatio' : FormatValue(snp.CurrentRatio(),'Current_Ratio','s'),
+                    'Beta' : snp.Beta().slope
     
                 })
             }
@@ -855,6 +875,7 @@ const FormatValue = (snap,key,type)=>{
     }
 }
 
+
 // conn.connect((err)=>{
 //     if(!err)
 //     {
@@ -865,7 +886,7 @@ const FormatValue = (snap,key,type)=>{
 //             'bseCode' : '500325'
 //         })
 //         .then((data)=>{
-//             console.log(data);
+//             // console.log(data);
 //             return data;
 //         })
 //         .catch((error)=>{

@@ -1,7 +1,7 @@
 import React from 'react';
 import CrossIcon from '../../assets/icons/crossicon.svg';
 
-export class IndicatorInfo extends React.Component {
+export class IndicatorInfo extends React.PureComponent {
     render() {
 
         const {CloseIndicatorInfo,indicatorInfoType} = this.props;

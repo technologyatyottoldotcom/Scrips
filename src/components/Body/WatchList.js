@@ -2,7 +2,7 @@ import React from 'react';
 import Eraser from '../../assets/icons/eraser.svg';
 import '../../css/CashPosition.css';
 
-class WatchList extends React.Component {
+class WatchList extends React.PureComponent {
 
     TopSection() {
         return (

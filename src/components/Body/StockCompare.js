@@ -1,6 +1,6 @@
 import React from 'react';
 
-export class StockCompare extends React.Component {
+export class StockCompare extends React.PureComponent {
     render() {
 
         const {Name,AddStock} = this.props;
