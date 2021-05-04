@@ -270,7 +270,7 @@ class ScripsBody extends React.PureComponent
             return <div className="app__body">
 
                 <div className="app__body__top">
-                    {/* <TopStocks data={this.state.chartdata} dataArray={dataArray}/> */}
+                    <TopStocks data={this.state.chartdata} dataArray={dataArray}/>
                 </div>
                 <div className="app__body__bottom">
                     <div className="business__news__section">
