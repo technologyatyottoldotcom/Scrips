@@ -43,7 +43,8 @@ export class StockChart extends React.PureComponent {
             channel : [],
             SDchannel : [],
             FibRet : [],
-            GannFan : []
+            GannFan : [],
+            chartProps : this.props.chartProps
         };
     }
 
@@ -452,7 +453,46 @@ export class StockChart extends React.PureComponent {
 
     getYExtents(high,low)
     {
-        return [high+(high*(1/100)),low-(low*(1/100))];
+        if(high && low)
+        {
+            return [high+(high*(1/100)),low-(low*(1/100))];
+        }
+        else
+        {
+            return [this.props.chartProps.lastPoint.high+(this.props.chartProps.lastPoint.high*(1/100)),this.props.chartProps.lastPoint.low-(this.props.chartProps.lastPoint.low*(1/100))];
+        }
+    }
+
+    getDisplayBuffer(range)
+    {
+        let buffer;
+        if(range === 'D')
+        {
+            buffer = 20;
+        }
+        else if(range === '1D')
+        {
+            buffer = 30;
+        }
+        else if(range === '5D')
+        {
+            buffer = 30;
+        }
+        else if(range === '1M')
+        {
+            buffer = 30;
+        }
+        else if(range === '3M')
+        {
+            buffer = 30;
+        }
+        else
+        {
+            buffer = 2;
+        }
+
+        return buffer;
+        
     }
 
 
@@ -526,52 +566,59 @@ export class StockChart extends React.PureComponent {
         xScaleVal = xScale;
         displayxAccessorVal = displayXAccessor;
 
+        let buffer = this.getDisplayBuffer(this.props.chartProps.range);
+
 
         //check range
-        if(range === '1D')
-        {
-            end = xAccessorVal(dataVal[Math.max(0,dataVal.length - 2)]);
-        }
-        else if(range === '5D')
-        {
-            end = xAccessorVal(dataVal[Math.max(0,dataVal.length - 6)]);
-        }
-        else if(range === '1M')
-        {
-            let weeks = Math.floor((1*30)/4);
-            let days = (1*30) - (weeks*2);
-            end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
-        }
-        else if(range === '6M')
-        {
-            let weeks = Math.floor((6*30)/4);
-            let days = (6*30) - (weeks*2);
-            end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
-        }
-        else if(range === 'YTD')
-        {
-            let weeks = Math.floor((1*30)/4);
-            let days = (1*30) - (weeks*2);
-            end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
-        }
-        else if(range === '1Y')
-        {
-            let weeks = Math.floor((12*30)/4);
-            let days = (12*30) - (weeks*2);
-            end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
-        }
-        else if(range === '5Y')
-        {
-            let weeks = Math.floor((60*30)/4);
-            let days = (60*30) - (weeks*2);
-            end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
-        }
-        else
-        {
-            end = xAccessorVal(dataVal[dataVal.length - 30]);
-        }
+        // if(range === '1D')
+        // {
+        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - 2)]);
+        // }
+        // else if(range === '5D')
+        // {
+        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - 6)]);
+        // }
+        // else if(range === '1M')
+        // {
+        //     let weeks = Math.floor((1*30)/4);
+        //     let days = (1*30) - (weeks*2);
+        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
+        // }
+        // else if(range === '6M')
+        // {
+        //     let weeks = Math.floor((6*30)/4);
+        //     let days = (6*30) - (weeks*2);
+        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
+        // }
+        // else if(range === 'YTD')
+        // {
+        //     let weeks = Math.floor((1*30)/4);
+        //     let days = (1*30) - (weeks*2);
+        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
+        // }
+        // else if(range === '1Y')
+        // {
+        //     let weeks = Math.floor((12*30)/4);
+        //     let days = (12*30) - (weeks*2);
+        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
+        // }
+        // else if(range === '5Y')
+        // {
+        //     let weeks = Math.floor((60*30)/4);
+        //     let days = (60*30) - (weeks*2);
+        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
+        // }
+        // else
+        // {
+        //     end = xAccessorVal(dataVal[dataVal.length - 30]);
+        // }
 
-        start = xAccessorVal(last(dataVal));
+        // start = xAccessorVal(last(dataVal));
+        // const xExtents = [start,end];
+
+        start = xAccessorVal(dataVal[Math.min(this.props.chartProps.startIndex,dataVal.length-1)]);
+        end = xAccessorVal(dataVal[Math.max(dataVal.length - (this.props.chartProps.extraPoints) + buffer,0)]);
+        // console.log(dataVal[start],dataVal[end]);
         const xExtents = [start,end];
 
 

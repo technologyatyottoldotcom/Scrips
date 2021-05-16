@@ -69,7 +69,7 @@ export class ChartContainer extends React.PureComponent {
             chartWidth : 0,
             chartHeight : 0,
             zoom : false,
-            range : 'D',
+            range : this.props.range,
             chartTypeIcon : Line,
             interactiveType : 'line',
             trendLineType : 'none',
@@ -224,6 +224,7 @@ export class ChartContainer extends React.PureComponent {
         this.setState({
             range : type
         });
+        this.props.setRange(type);
         $('.chart__range>div').removeClass('active__range');
         $('.chart__range>div[data-range="'+type+'"]').addClass('active__range');
     }
@@ -652,7 +653,7 @@ export class ChartContainer extends React.PureComponent {
                                 {/* <ChartClock /> */}
                             </div>
                         </div>
-                        <div className="stock__chart">
+                        <div className={this.props.dataLoaded ? "stock__chart" : "stock__chart stock__chart__blur"}>
                             <StockChart 
                                 key={1} 
                                 data={this.props.data} 
@@ -666,6 +667,7 @@ export class ChartContainer extends React.PureComponent {
                                 IndicatorChartTypeArray={this.state.IndicatorChartTypeArray}
                                 trendLineType={this.state.trendLineType} 
                                 interactiveType={this.state.interactiveType}
+                                chartProps={this.props.chartProps}
                             />
                         </div>
                     </div>
@@ -675,7 +677,8 @@ export class ChartContainer extends React.PureComponent {
                         <div data-range="1D" className="chart__range__value" onClick={this.changeRange.bind(this,'1D')}>1D</div>
                         <div data-range="5D" className="chart__range__value" onClick={this.changeRange.bind(this,'5D')}>5D</div>
                         <div data-range="1M" className="chart__range__value" onClick={this.changeRange.bind(this,'1M')}>1M</div>
-                        <div data-range="6M" className="chart__range__value active__range" onClick={this.changeRange.bind(this,'6M')}>6M</div>
+                        <div data-range="3M" className="chart__range__value" onClick={this.changeRange.bind(this,'3M')}>3M</div>
+                        <div data-range="6M" className="chart__range__value" onClick={this.changeRange.bind(this,'6M')}>6M</div>
                         <div data-range="YTD" className="chart__range__value" onClick={this.changeRange.bind(this,'YTD')}>YTD</div>
                         <div data-range="1Y" className="chart__range__value" onClick={this.changeRange.bind(this,'1Y')}>1Y</div>
                         <div data-range="5Y" className="chart__range__value" onClick={this.changeRange.bind(this,'5Y')}>5Y</div>

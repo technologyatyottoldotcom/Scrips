@@ -1070,6 +1070,11 @@
   height: 100%;
 }
 
+.app__body .app__body__left .chart__container .stock__chart.stock__chart__blur 
+{
+  opacity: 0.5;
+}
+
 .app__body .app__body__left .chart__container .stock__chart g 
 {
   fill : '#00a0e3';

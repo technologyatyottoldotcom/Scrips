@@ -159,5 +159,56 @@ function getExchangeCode(exchange)
     return Exchanges.find(e => e.exchange === exchange)
 }
 
+function getCandleDuration(range)
+{
+    switch(range){
+        case 'D' :
+            return {
+                candle : 1,
+                duration : 1
+            }
+        case '1D' :
+            return {
+                candle : 1,
+                duration : 1
+            }
+        case '5D' :
+            return {
+                candle : 1,
+                duration : 5
+            }
+        case '1M' :
+            return {
+                candle : 1,
+                duration : 30
+            }
+        case '3M' :
+            return {
+                candle : 2,
+                duration : 1
+            }
+        case '6M' :
+            return {
+                candle : 1,
+                duration : 120
+            }
+        case 'YTD' :
+            return {
+                candle : 3,
+                duration : 1 
+            }
+        case '1Y' :
+            return {
+                candle : 3,
+                duration : 1 
+            }
+        default :
+            return {
+                candle : 3,
+                duration : 1
+            }
+    }
+}
 
-module.exports = {MarketDataStructure,getExchangeCode};
+
+module.exports = {MarketDataStructure,getExchangeCode,getCandleDuration};

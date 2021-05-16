@@ -13,9 +13,9 @@ export function renderSVG(props) {
     if(isDefined(edge.circle))
     {
         circle = <g>
-            <circle class="pulse-disk" cx={edge.circle.x} cy={edge.circle.y} r={edge.circle.radius} fill={edge.circle.fill}/>
-            <circle class="pulse-circle-1" cx={edge.circle.x} cy={edge.circle.y} stroke-width="2" />
-            <circle class="pulse-circle-2" cx={edge.circle.x} cy={edge.circle.y}  stroke-width="2" />
+            <circle className="pulse-disk" cx={edge.circle.x} cy={edge.circle.y} r={edge.circle.radius} fill={edge.circle.fill}/>
+            <circle className="pulse-circle-1" cx={edge.circle.x} cy={edge.circle.y} strokeWidth="2" />
+            <circle className="pulse-circle-2" cx={edge.circle.x} cy={edge.circle.y}  strokeWidth="2" />
         </g>
     }
 

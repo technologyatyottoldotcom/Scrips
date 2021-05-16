@@ -1,0 +1,461 @@
+const moment = require('moment');
+
+
+//please don't specify date in DD-MM-YYYY format for all months
+/* right way */
+//DD-M-YYYY (for month 1 to 9)
+//DD-MM-YYYY (for month 10 to 12)
+
+const holidays = [
+        '26-1-2021',
+        '11-3-2021',
+        '29-3-2021',
+        '2-4-2021',
+        '14-4-2021',
+        '21-4-2021',
+        '13-5-2021',
+        '21-7-2021',
+        '19-8-2021',
+        '10-9-2021',
+        '15-10-2021',
+        '4-11-2021'
+]
+
+function getNextDays(days)
+{
+    //does not count saturday and sunday
+    let nod = 0,incr = 1;
+    let futureDays = [];
+    const defaultStartTime = {
+        startHour : 9,
+        startMinute : 15,
+        startSecond : 0
+    }
+    const defaultEndTime = {
+        endHour : 15,
+        endMinute : 29,
+        endSecond : 0
+    }
+    let today = moment();
+
+    if(isWorkingDay(today))
+    {
+        futureDays.push({
+            date : today.clone(),
+            startHour : parseInt(today.format('H')),
+            startMinute : parseInt(today.format('m')),
+            startSecond : parseInt(today.format('s')),
+            ...defaultEndTime
+        })
+    }
+
+    let addedDay = moment();
+    
+    while(nod < days)
+    {
+        addedDay = getNextWorkingDay(addedDay);
+        nod++;
+        // console.log(addedDay,nod);
+        futureDays.push({
+            date : addedDay.clone(),
+            ...defaultStartTime,
+            ...defaultEndTime
+        });
+    }
+
+    // console.log(futureDays);
+
+    return futureDays;
+}
+
+function getNextMinutes(minutes)
+{
+    let today = moment();
+    let futureDays = [];
+
+    const defaultStartTime = {
+        startHour : 9,
+        startMinute : 15,
+        startSecond : 0
+    }
+    const defaultEndTime = {
+        endHour : 15,
+        endMinute : 29,
+        endSecond : 0
+    }
+
+    let EnoughTime = isEnoughTime(today,minutes);
+
+    if(EnoughTime.enough && EnoughTime.duration >= minutes)
+    {
+        let endTime = today.clone().add(minutes,'minutes');
+        futureDays.push({
+            date : today.clone(),
+            startHour : parseInt(today.format('H')),
+            startMinute : parseInt(today.format('m')),
+            startSecond : parseInt(today.format('s')),
+            endHour : parseInt(endTime.format('H')),
+            endMinute : parseInt(endTime.format('m')),
+            endSecond : parseInt(endTime.format('s'))
+        })
+    }
+    else if(!EnoughTime.enough && EnoughTime.duration >= 5)
+    {
+        console.log('Mixed');
+        console.log(EnoughTime.duration);
+
+        let extra = minutes - EnoughTime.duration;
+
+
+        futureDays.push({
+            'date' : today.clone(),
+            startHour : parseInt(today.format('H')),
+            startMinute : parseInt(today.format('m')),
+            startSecond : parseInt(today.format('s')),
+            ...defaultEndTime
+        });
+
+        let nextDay = getNextWorkingDay(today);
+        nextDay.set({
+            'hour' : defaultStartTime.startHour,
+            'minute' : defaultStartTime.startMinute,
+            'second' : defaultStartTime.startSecond
+        });
+
+        nextDay.add(extra,'minutes');
+
+
+        futureDays.push({
+            'date' : today.clone(),
+            ...defaultStartTime,
+            endHour : parseInt(nextDay.format('H')),
+            endMinute : parseInt(nextDay.format('m')),
+            endSecond : parseInt(nextDay.format('s'))
+        });
+
+    }
+    else
+    {
+        //check tomorrow
+        let nextDay = getNextWorkingDay(today);
+        nextDay.set({
+            'hour' : defaultStartTime.startHour,
+            'minute' : defaultStartTime.startMinute,
+            'second' : defaultStartTime.startSecond
+        });
+
+        nextDay.add(minutes,'minutes');
+
+
+        futureDays.push({
+            'date' : today.clone(),
+            ...defaultStartTime,
+            endHour : parseInt(nextDay.format('H')),
+            endMinute : parseInt(nextDay.format('m')),
+            endSecond : parseInt(nextDay.format('s'))
+        });
+    }
+
+    // console.log(futureDays);
+    return futureDays;
+    
+}
+
+function getNextWorkingDay(day)
+{
+    let isWD = false;
+    let nextWorkingDay;
+    while(!isWD)
+    {
+        let addedDay = day.add(1,'days');
+        //if saturday or sunday then skip
+        if(isWorkingDay(addedDay))
+        {
+            nextWorkingDay = addedDay.clone();
+            isWD = true;
+        }
+    }
+
+    return nextWorkingDay;
+}
+
+function isWorkingDay(day)
+{
+    if(day.format('d') !== '6' && day.format('d') !== '0' && !holidays.includes(day.format('DD-M-YYYY')))
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+function generatePoints(days,incr)
+{
+    let points = [];
+
+    console.log('generate points');
+
+    days.forEach(day => {
+        
+        let startDT = day.date.clone().set({
+            'hour' : day.startHour,
+            'minute' : day.startMinute,
+            'second' : day.startSecond
+        });
+
+        let endDT = day.date.clone().set({
+            'hour' : day.endHour,
+            'minute' : day.endMinute,
+            'second' : day.endSecond
+        });
+
+        if(startDT < endDT)
+        {
+            // console.log(day,startDT,endDT);
+            points = points.concat(getMinuteInterval(startDT,endDT,incr));
+            // console.log(points[points.length-1])
+        }
+
+        
+
+    });
+
+    console.log(points.length);
+    return points;
+
+}
+
+function getMinuteInterval(startDate,endDate,incr)
+{
+    let interval = [];
+    while(startDate < endDate)
+    {
+        interval.push(
+            {
+                date : new Date(startDate.add(incr,'minutes').clone())
+            }
+        );
+
+    }
+    // console.log(interval.length,interval[0],interval[interval.length-1]);
+    return interval;
+}
+
+function isMarketClosed(curr)
+{
+    if(curr.format('H') >= 15 && curr.format('m') > 29)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+function isEnoughTime(day,time)
+{
+    if(isWorkingDay(day) && !isMarketClosed(day))
+    {
+        let EndTime = moment().set({
+            'year' : day.get('year'),
+            'month' : day.get('month'),
+            'date' : day.get('date'),
+            'hour' : 15,
+            'minute' : 29,
+            'second' : 0
+        });
+    
+        let duration = moment.duration(EndTime.diff(day));
+    
+        return duration.asMinutes() >= time ? {
+            'enough' : true,
+            'duration' : parseInt(duration.asMinutes())
+        } : {
+            'enough' : false,
+            'duration' : parseInt(duration.asMinutes())
+        };
+    }
+    else
+    {
+        return false;
+    }
+}
+
+
+function getFuturePoints(range)
+{
+
+    let futureDaysArr,points;
+
+    switch(range){
+        case 'D' : 
+            futureDaysArr = getNextMinutes(30);
+            console.log(futureDaysArr);
+            points = generatePoints(futureDaysArr,1);
+            // console.log(points);
+            return points;
+        
+        case '1D' : 
+            futureDaysArr = getNextDays(1);
+            console.log(futureDaysArr);
+            points = generatePoints(futureDaysArr,1);
+            // console.log(points);
+            return points;
+        
+        case '5D' : 
+            futureDaysArr = getNextDays(5);
+            console.log(futureDaysArr);
+            points = generatePoints(futureDaysArr,5);
+            // console.log(points);
+            return points;
+        
+        case '1M' : 
+            futureDaysArr = getNextDays(30);
+            console.log(futureDaysArr);
+            points = generatePoints(futureDaysArr,30);
+            // console.log(points);
+            return points;
+        
+        case '3M' : 
+            futureDaysArr = getNextDays(30);
+            console.log(futureDaysArr);
+            points = generatePoints(futureDaysArr,30);
+            // console.log(points);
+            return points;
+
+        default : 
+            futureDaysArr = getNextDays(5);
+            console.log(futureDaysArr);
+            points = generatePoints(futureDaysArr,60);
+            // console.log(points);
+            return points;
+    }
+    
+}
+
+
+function getStartPointIndex(data,range,lastPoint)
+{
+    if(range === 'D')
+    {
+      return data.length - 120;
+    }
+    else if(range === '1D')
+    {
+      let indx = data.findIndex(d => {
+        return d.date.getDate() == lastPoint.date.getDate() && d.date.getMonth() == lastPoint.date.getMonth() && d.date.getFullYear() == lastPoint.date.getFullYear()
+      });
+      return indx;
+    }
+    else if(range === '5D')
+    {
+        let found = false,index;
+        let dt = moment().
+        set({
+            'date' : lastPoint.date.getDate(),
+            'month' : lastPoint.date.getMonth(),
+            'year' : lastPoint.date.getFullYear()
+        })
+        .subtract(5,'days');        
+        console.log(dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
+        while(!found)
+        {
+            let indx = data.findIndex(d => {
+                return d.date.getDate() === dt.get('date') && d.date.getMonth() === (dt.get('month')) && d.date.getFullYear() === dt.get('year');
+            });
+            console.log(indx,dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
+            if(indx === -1)
+            {
+                dt = dt.subtract(1,'days');
+            }
+            else
+            {
+                found = true;
+                index = indx;
+                break;
+            }
+
+            console.log('checking .... ',dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
+        }
+        console.log('INDEX :  -----> ',index);
+        return index;
+    }
+
+    else if(range === '1M')
+    {
+        let found = false,index;
+        let dt = moment().
+        set({
+            'date' : lastPoint.date.getDate(),
+            'month' : lastPoint.date.getMonth(),
+            'year' : lastPoint.date.getFullYear()
+        })
+        .subtract(1,'months');        
+        console.log(dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
+        while(!found)
+        {
+            let indx = data.findIndex(d => {
+                return d.date.getDate() === dt.get('date') && d.date.getMonth() === (dt.get('month')) && d.date.getFullYear() === dt.get('year');
+            });
+            console.log(indx,dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
+            if(indx === -1)
+            {
+                dt = dt.subtract(1,'days');
+            }
+            else
+            {
+                found = true;
+                index = indx;
+                break;
+            }
+
+            console.log('checking .... ',dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
+        }
+        console.log('INDEX :  -----> ',index);
+        return index;
+    }
+
+    else if(range === '3M')
+    {
+        let found = false,index;
+        let dt = moment().
+        set({
+            'date' : lastPoint.date.getDate(),
+            'month' : lastPoint.date.getMonth(),
+            'year' : lastPoint.date.getFullYear()
+        })
+        .subtract(3,'months');        
+        console.log(dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
+        while(!found)
+        {
+            let indx = data.findIndex(d => {
+                return d.date.getDate() === dt.get('date') && d.date.getMonth() === (dt.get('month')) && d.date.getFullYear() === dt.get('year');
+            });
+            console.log(indx,dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
+            if(indx === -1)
+            {
+                dt = dt.subtract(1,'days');
+            }
+            else
+            {
+                found = true;
+                index = indx;
+                break;
+            }
+
+            console.log('checking .... ',dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
+        }
+        console.log('INDEX :  -----> ',index);
+        return index;
+    }
+    else
+    {
+        return data.length - 120;
+    }
+}
+
+
+module.exports = {getFuturePoints,getStartPointIndex};

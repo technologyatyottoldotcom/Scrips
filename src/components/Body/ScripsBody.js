@@ -13,9 +13,11 @@ import Orders from './MenuSection/Orders';
 import SmallCase from './MenuSection/SmallCase';
 import Research from './MenuSection/Research';
 import Exit from './MenuSection/Exit';
-import { timeParse } from "d3-time-format";
 import { BusinessNews } from './BusinessNews/BusinessNews';
 import {readMarketData} from '../../exports/FormatData';
+import {getCandleDuration} from '../../exports/MessageStructure';
+import {getFuturePoints,getStartPointIndex} from '../../exports/FutureEntries';
+import convertToUNIX from '../../exports/TimeConverter';
 import '../../css/BusinessNews.css';
 import '../../css/MenuSection.css';
 import '../../css/CustomChartComponents.css';
@@ -34,25 +36,30 @@ class ScripsBody extends React.PureComponent
         super(props);
         this.state = {
             chartdata : null,
+            chartProps : null,
             stockData : '',
             tempData : '',
             stockDetails : this.props.stockDetails,
             oldStockDetails : this.props.stockDetails,
             snapdata : null,
             isLoaded : false,
+            dataLoaded : false,
+            range : 'D',
             endpoint : 'wss://masterswift-beta.mastertrust.co.in/hydrasocket/v2/websocket?access_token=qaoSOB-l4jmwXlxlucY4ZTKWsbecdrBfC7GoHjCRy8E.soJkcdbrMmew-w1C0_KZ2gcQBUPLlPTYNbt9WLJN2g8',
             ws : null,
             FeedConnection : false
         }
 
         this.SnapShotRequest = this.SnapShotRequest.bind(this);
+        this.setRange = this.setRange.bind(this);
     }
 
     componentDidMount()
     {
+        let options = getCandleDuration(this.state.range);
         this.makeSocketConnection()
         .then(()=>{
-            this.loadChartData();
+            this.loadChartData(this.state.range,options.candle,options.duration);
             this.checkConnection();
             this.SnapShotRequest(this.state.stockDetails.stockSymbol,this.state.stockDetails.stockNSECode,this.state.stockDetails.stockBSECode,this.state.stockDetails.stockExchange.exchange);
         });
@@ -63,13 +70,14 @@ class ScripsBody extends React.PureComponent
     {
         if(prevProps.stockDetails.stockCode !== this.props.stockDetails.stockCode)
         {
+            let options = getCandleDuration(this.state.range);
             console.log('props update : ',this.props.stockDetails.stockCode);
             this.setState({
                 stockDetails : this.props.stockDetails,
                 oldStockDetails : this.state.stockDetails,
                 isLoaded : false
             },()=>{
-                this.loadChartData();
+                this.loadChartData(this.state.range,options.candle,options.duration);
                 this.checkConnection();
                 this.SnapShotRequest(this.state.stockDetails.stockSymbol,this.state.stockDetails.stockNSECode,this.state.stockDetails.stockBSECode,this.state.stockDetails.stockExchange.exchange);
 
@@ -164,10 +172,22 @@ class ScripsBody extends React.PureComponent
         }
     }
 
-    async loadChartData()
+    async loadChartData(type,ct,dd)
     {
 
-        Axios.get(`https://mastertrust-charts.tradelab.in/api/v1/charts?exchange=${this.props.stockDetails.stockExchange.exchange}&token=${this.props.stockDetails.stockCode}&candletype=1&starttime=1617235200&endtime=1632583718&data_duration=1`)
+        this.setState({
+            dataLoaded : false
+        })
+
+        let startUNIX = convertToUNIX(type);
+
+        console.log(startUNIX,type,ct,dd);
+
+        let url = `https://mastertrust-charts.tradelab.in/api/v1/charts?exchange=${this.props.stockDetails.stockExchange.exchange}&token=${this.props.stockDetails.stockCode}&candletype=${ct}&starttime=${startUNIX}&endtime=1632583718&data_duration=${dd}`;
+
+        console.log(url);
+
+        Axios.get(url)
         .then(res=>{
             const data = res.data;
             console.log(data);
@@ -192,9 +212,28 @@ class ScripsBody extends React.PureComponent
                 });
 
                 // console.log(tempDataArray);
+                let lastPoint = tempDataArray[tempDataArray.length - 1];
+                let startIndex = getStartPointIndex(tempDataArray,type,lastPoint);
+
+                // console.log(startIndex);
+
+                let mergedData = tempDataArray;
+                let futurePoints = getFuturePoints(type);
+                // console.log(futurePoints);
+                mergedData = mergedData.concat(futurePoints);
+
+
                 this.setState({
-                    chartdata : tempDataArray,
-                    isLoaded : true
+                    chartdata : mergedData,
+                    isLoaded : true,
+                    dataLoaded : true,
+                    chartProps : {
+                        chartdata : mergedData,
+                        lastPoint : lastPoint,
+                        startIndex : startIndex,
+                        extraPoints : futurePoints.length,
+                        range : type
+                    }
                 })
             }
 
@@ -215,9 +254,7 @@ class ScripsBody extends React.PureComponent
         }).catch(e => {
             this.setState({  error: e.message })
         })
-    }
-
-    
+    }   
 
     openNews()
     {
@@ -229,6 +266,18 @@ class ScripsBody extends React.PureComponent
     {
         $('.business__news__section').css('transform','translateY(100%)');
         $('.bn__close').removeClass('active');
+    }
+
+    setRange(range)
+    {
+        let options = getCandleDuration(range);
+        console.log(options);
+        this.loadChartData(range,options.candle,options.duration)
+        .then(()=>{
+            this.setState({
+                range : range,
+            })
+        })
     }
 
     
@@ -299,10 +348,14 @@ class ScripsBody extends React.PureComponent
                     }
                     <div className="app__body__left">
                         <ChartContainer 
-                            data={this.state.chartdata} 
+                            data={this.state.chartProps.chartdata} 
                             stockData={this.state.stockData} 
                             stockDetails={this.state.stockDetails}
                             isLoaded={this.state.isLoaded}
+                            dataLoaded={this.state.dataLoaded}
+                            chartProps={this.state.chartProps}
+                            setRange={this.setRange}
+                            range={this.state.range}
                         />
                         <StocksToWatch
                             stockISIN={this.state.stockDetails.stockISIN} 
