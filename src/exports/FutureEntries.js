@@ -19,7 +19,7 @@ const holidays = [
         '10-9-2021',
         '15-10-2021',
         '4-11-2021'
-]
+];
 
 function getNextDays(days)
 {
@@ -285,7 +285,7 @@ function isEnoughTime(day,time)
 }
 
 
-function getFuturePoints(range)
+export function getFuturePoints(range)
 {
 
     let futureDaysArr,points;
@@ -337,7 +337,7 @@ function getFuturePoints(range)
 }
 
 
-function getStartPointIndex(data,range,lastPoint)
+export function getStartPointIndex(data,range,lastPoint)
 {
     if(range === 'D')
     {
@@ -458,4 +458,4 @@ function getStartPointIndex(data,range,lastPoint)
 }
 
 
-module.exports = {getFuturePoints,getStartPointIndex};
+// module.exports = {getFuturePoints,getStartPointIndex};

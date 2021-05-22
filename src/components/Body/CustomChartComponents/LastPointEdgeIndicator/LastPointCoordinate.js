@@ -8,30 +8,21 @@ export function renderSVG(props) {
 
 	const edge = helper(props);
 	if (edge === null) return null;
-	let circle,blink;
+	let circle;
 
     if(isDefined(edge.circle))
     {
         circle = <g>
             <circle className="pulse-disk" cx={edge.circle.x} cy={edge.circle.y} r={edge.circle.radius} fill={edge.circle.fill}/>
-            <circle className="pulse-circle-1" cx={edge.circle.x} cy={edge.circle.y} strokeWidth="2" />
-            <circle className="pulse-circle-2" cx={edge.circle.x} cy={edge.circle.y}  strokeWidth="2" />
+            {/* <circle className="pulse-circle-1" cx={edge.circle.x} cy={edge.circle.y} strokeWidth="2" fill={edge.circle.fill}/>
+            <circle className="pulse-circle-2" cx={edge.circle.x} cy={edge.circle.y}  strokeWidth="2" fill={edge.circle.fill}/> */}
         </g>
     }
-
-    // blink = (
-    //     <svg class="pulse" x="100px" y="100px" width="100px" height="100px" viewBox="0 0 100 100">
-    //         <circle class="pulse-disk" cx="50" cy="50" r={10} fill="#000000" stroke-width="2"/>	
-    //         <circle class="pulse-circle" cx="50" cy="50" stroke-width="2" r={10} fill="#000000"/>
-    //         <circle class="pulse-circle-2" cx="50" cy="50"  stroke-width="2" r={10}/>
-    //     </svg>
-    // );
 
 
 	return (
 		<g className={className}>
             {circle}
-            {/* {blink} */}
 		</g>
 	);
 }

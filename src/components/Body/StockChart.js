@@ -3,22 +3,25 @@ import $ from 'jquery';
 import PropTypes from 'prop-types';
 import {scaleTime} from 'd3-scale';
 import { format } from 'd3-format';
+import { curveMonotoneX, curveCardinal } from "d3-shape";
 import {ChartCanvas,Chart} from 'react-stockcharts';
 import {XAxis,YAxis} from 'react-stockcharts/lib/axes';
 import {LineSeries,AreaSeries,BarSeries,CandlestickSeries,ScatterSeries ,OHLCSeries,KagiSeries,RenkoSeries,PointAndFigureSeries, SquareMarker,CircleMarker , BollingerSeries , MACDSeries , RSISeries ,StochasticSeries ,StraightLine ,ElderRaySeries , SARSeries , VolumeProfileSeries} from 'react-stockcharts/lib/series';
 import { pointAndFigure ,kagi,renko} from "react-stockcharts/lib/indicator";
 import { discontinuousTimeScaleProvider } from "react-stockcharts/lib/scale";
 import {fitWidth} from 'react-stockcharts/lib/helper';
-import { last ,toObject } from "react-stockcharts/lib/utils";
+import { last ,toObject , rightDomainBasedZoomAnchor , lastVisibleItemBasedZoomAnchor } from "react-stockcharts/lib/utils/zoomBehavior";
 import { timeFormat } from 'd3-time-format';
 import { TrendLine,EquidistantChannel,StandardDeviationChannel ,FibonacciRetracement ,GannFan} from "react-stockcharts/lib/interactive";
 import {saveInteractiveNodes, getInteractiveNodes} from "../../exports/InteractiveUtils";
 import { OHLCTooltip } from "react-stockcharts/lib/tooltip";
 import {getXCoordinateProps, getYCoordinateProps, getXAxisProps, getYAxisProps} from '../../exports/ChartProps';
-import { CrossHairCursor, MouseCoordinateX, MouseCoordinateY } from "react-stockcharts/lib/coordinates";
+import { CrossHairCursor, MouseCoordinateX, MouseCoordinateY ,PriceCoordinate, EdgeIndicator  } from "react-stockcharts/lib/coordinates";
 import {sma20,wma20,ema20,tma20,bb,macdCalculator,rsiCalculator,atrCalculator,slowSTO,fastSTO,fullSTO,fi,fiEMA,elder,elderImpulseCalculator,defaultSar,changeCalculator,compareCalculator} from '../../exports/MathematicalIndicators';
 import {TrendLineAppearance,EquidistantChannelAppearance,StandardDeviationChannelAppearance,FibRetAppearance,GannFanAppearance} from '../../exports/InteractiveAppearance';
 import LastPointIndicator from './CustomChartComponents/LastPointEdgeIndicator/LastPointIndicator';
+import PriceMarkerCoordinate from './CustomChartComponents/PriceMarker/PriceMarkerCoordinate';
+import LabelEdgeCoordinate from './CustomChartComponents/EdgeLabel/LabelEdgeCoordinate';
 
 export class StockChart extends React.PureComponent {
 
@@ -367,8 +370,8 @@ export class StockChart extends React.PureComponent {
         if(chartType === 'line'){
             calculatedData = initialData;
             chartSeries = <>
-                            <LineSeries yAccessor ={d =>d.open} strokeWidth ={2} stroke="#64b5f6"/>
-                            <LastPointIndicator yAccessor={d => d.open} displayFormat={format(".4s")} fill="#55efc4" radius={5}/>
+                            <LineSeries yAccessor ={d =>d.open} strokeWidth={2} stroke="#00a0e3" interpolation={curveCardinal}/>
+                            <LastPointIndicator yAccessor={d => d.open} displayFormat={format(".4s")} radius={4}/>
                           </>;
             
         }
@@ -455,11 +458,11 @@ export class StockChart extends React.PureComponent {
     {
         if(high && low)
         {
-            return [high+(high*(1/100)),low-(low*(1/100))];
+            return [high+(high*(0.1/100)),low-(low*(0.1/100))];
         }
         else
         {
-            return [this.props.chartProps.lastPoint.high+(this.props.chartProps.lastPoint.high*(1/100)),this.props.chartProps.lastPoint.low-(this.props.chartProps.lastPoint.low*(1/100))];
+            return [this.props.chartProps.lastPoint.high+(this.props.chartProps.lastPoint.high*(0.1/100)),this.props.chartProps.lastPoint.low-(this.props.chartProps.lastPoint.low*(0.1/100))];
         }
     }
 
@@ -499,6 +502,7 @@ export class StockChart extends React.PureComponent {
     render() {
 
         console.log('Rendering StockChart....');
+        console.log(this.state.chartProps.lastPoint);
 
         const {data : initialData ,type,width,height,ratio,range,zoom,chartType,TotalCharts,IndicatorChartTypeArray,trendLineType} = this.props;
 
@@ -523,7 +527,7 @@ export class StockChart extends React.PureComponent {
         }
         else
         {
-            margin = {left: 0, right: 20, top:0, bottom: 20};
+            margin = {left: 0, right: 0, top:0, bottom: 20};
         }
         var gridHeight = height - margin.top - margin.bottom;
         var gridWidth = width - margin.left - margin.right;
@@ -568,58 +572,12 @@ export class StockChart extends React.PureComponent {
 
         let buffer = this.getDisplayBuffer(this.props.chartProps.range);
 
-
-        //check range
-        // if(range === '1D')
-        // {
-        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - 2)]);
-        // }
-        // else if(range === '5D')
-        // {
-        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - 6)]);
-        // }
-        // else if(range === '1M')
-        // {
-        //     let weeks = Math.floor((1*30)/4);
-        //     let days = (1*30) - (weeks*2);
-        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
-        // }
-        // else if(range === '6M')
-        // {
-        //     let weeks = Math.floor((6*30)/4);
-        //     let days = (6*30) - (weeks*2);
-        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
-        // }
-        // else if(range === 'YTD')
-        // {
-        //     let weeks = Math.floor((1*30)/4);
-        //     let days = (1*30) - (weeks*2);
-        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
-        // }
-        // else if(range === '1Y')
-        // {
-        //     let weeks = Math.floor((12*30)/4);
-        //     let days = (12*30) - (weeks*2);
-        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
-        // }
-        // else if(range === '5Y')
-        // {
-        //     let weeks = Math.floor((60*30)/4);
-        //     let days = (60*30) - (weeks*2);
-        //     end = xAccessorVal(dataVal[Math.max(0,dataVal.length - days)]);
-        // }
-        // else
-        // {
-        //     end = xAccessorVal(dataVal[dataVal.length - 30]);
-        // }
-
-        // start = xAccessorVal(last(dataVal));
-        // const xExtents = [start,end];
-
         start = xAccessorVal(dataVal[Math.min(this.props.chartProps.startIndex,dataVal.length-1)]);
         end = xAccessorVal(dataVal[Math.max(dataVal.length - (this.props.chartProps.extraPoints) + buffer,0)]);
         // console.log(dataVal[start],dataVal[end]);
         const xExtents = [start,end];
+
+        let openPrice = parseFloat(this.props.openPrice.replace(',',''));
 
 
         return (
@@ -638,6 +596,8 @@ export class StockChart extends React.PureComponent {
                     xExtents={xExtents}
                     data={dataVal}
                     type={type}
+                    zoomAnchor={lastVisibleItemBasedZoomAnchor}
+                    
                 >   
 
 
@@ -648,25 +608,102 @@ export class StockChart extends React.PureComponent {
                     height={this.getChartHeight(height,zoom,TotalCharts)}>
 
 
+
+                    {chartSeries}
                     
+                    {!zoom && <>
+                        <EdgeIndicator 
+                            orient="left"
+                            edgeAt="right"
+                            itemType="last"
+                            yAccessor={d =>d.open}
+                            displayFormat={format(".2f")}
+                            arrowWidth={0}
+                            fill="#ffffff"
+                            fontSize={11}
+                            textFill="#00a0e3"
+                            strokeWidth={1}
+                            lineOpacity={0}
+                            dx={1}
+                        />
+                    </>}
 
                     {zoom && <>
+
+                        <YAxis {...getYAxisProps()} {...gridProps}/>
+
                         {TotalCharts === 1 ? 
                             <>
                                 <XAxis {...getXAxisProps()} {...gridProps}/>
                                 <MouseCoordinateX {...getXCoordinateProps()}/>
+                                <LabelEdgeCoordinate 
+                                    at="right"
+                                    orient="left"
+                                    price={this.state.chartProps.lastPoint.open}
+                                    displayFormat={format('.2f')}
+                                    labelText={this.props.stockDetails.stockNSECode}
+                                    fill="#00a0e3"
+                                    rectHeight={18}
+                                    rectWidth={this.props.stockDetails.stockNSECode.length * 11}
+                                    dx={1}
+                                    fontSize={11}
+                                    strokeDasharray="ShortDot"
+                                    lineStroke="#00a0e3"
+                                    lineOpacity={0.5}
+                                    textFill="#ffffff"
+                                />
+                                <PriceCoordinate 
+                                    at="right"
+                                    orient="right"
+                                    price={this.state.chartProps.lastPoint.open}
+                                    displayFormat={format('.2f')}
+                                    fill="#00a0e3"
+                                    rectHeight={18}
+                                    fontSize={11}
+                                    hideLine={true}
+                                    lineOpacity={0}
+                                    
+                                />
+
+                                <EdgeIndicator 
+                                    orient="right"
+                                    edgeAt="right"
+                                    itemType="last"
+                                    yAccessor={d =>d.open}
+                                    displayFormat={format(".2f")}
+                                    arrowWidth={0}
+                                    fill="#00a0e3"
+                                    fontSize={11}
+                                    rectHeight={18}
+                                    strokeWidth={1}
+                                    lineOpacity={0}
+                                />
                         
                             </> :
                             <>
                                 <XAxis {...getXAxisProps()} {...gridProps}/>
                             </>
                         }
+
                         
-                        <YAxis {...getYAxisProps()} {...gridProps}/>
                         <MouseCoordinateY {...getYCoordinateProps()}/>
-                        
                     </>}
-                    {chartSeries}
+                    <PriceMarkerCoordinate 
+                        at="left"
+                        orient="right"
+                        price={openPrice}
+                        displayFormat={format('.2f')}
+                        strokeDasharray="ShortDot"
+                        dx={20} 
+                        fill="#8E8E8E"
+                        rectWidth={70}
+                        rectHeight={20}   
+                    />
+
+                    
+                    
+
+                    
 
                     {/* <TrendLine
 						    ref={this.saveInteractiveNodes("Trendline", 1)}
@@ -767,8 +804,6 @@ export class StockChart extends React.PureComponent {
                 }
 
                 {zoom && <CrossHairCursor />}
-                
-
 
             </ChartCanvas>
             </div>
@@ -784,7 +819,7 @@ StockChart.propTypes = {
 };
 
 StockChart.defaultProps ={
-    type : 'svg'
+    type : 'svg',
 }
 
 StockChart = fitWidth(StockChart);

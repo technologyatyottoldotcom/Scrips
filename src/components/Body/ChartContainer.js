@@ -656,6 +656,7 @@ export class ChartContainer extends React.PureComponent {
                         <div className={this.props.dataLoaded ? "stock__chart" : "stock__chart stock__chart__blur"}>
                             <StockChart 
                                 key={1} 
+                                openPrice={this.props.stockData.open_price}
                                 data={this.props.data} 
                                 range={this.state.range} 
                                 width={this.state.chartWidth} 
@@ -668,6 +669,7 @@ export class ChartContainer extends React.PureComponent {
                                 trendLineType={this.state.trendLineType} 
                                 interactiveType={this.state.interactiveType}
                                 chartProps={this.props.chartProps}
+                                stockDetails={this.props.stockDetails}
                             />
                         </div>
                     </div>

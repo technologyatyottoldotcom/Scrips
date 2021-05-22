@@ -12,10 +12,10 @@ export class ScripsFooter extends React.PureComponent {
                     <span>Help</span>
                     <span>FAQs</span>
                 </div>
-                <div className="app__logout">
+                {/* <div className="app__logout">
                     <img src={Logout} alt="" />
                     <p>Logout</p>
-                </div>
+                </div> */}
             </div>
         )
     }

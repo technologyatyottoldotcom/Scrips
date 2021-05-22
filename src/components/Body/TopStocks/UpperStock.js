@@ -158,6 +158,7 @@ export class UpperStock extends React.PureComponent {
 
         let priceClass = change_price >= 0 ? 'positive' : 'negative';
 
+
         return (
             this.state.isLoading ? 
             <div className="upper__stock">
@@ -197,7 +198,9 @@ export class UpperStock extends React.PureComponent {
                     <UpperStockChart 
                         data={this.state.data} 
                         width={this.state.chartWidth}   
-                        height={this.state.chartHeight} 
+                        height={this.state.chartHeight}
+                        status={priceClass}
+                        openPrice={stockData.open_price} 
                     />
                 </div>
             </div>

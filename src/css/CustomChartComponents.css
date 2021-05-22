@@ -1,53 +1,54 @@
 /* pulse effect */
-
 .pulse-disk
 {
   fill: #0984e3;
 }
 
-.pulse-circle-1,.pulse-circle-2
+
+
+/* .pulse-circle-1,.pulse-circle-2
 {
-  /* stroke: #0984e3; */
   transform-origin: center;
   stroke-width: 1px;
   fill: #0984e3;
-  transform: translate3d(0,0,0);
 }
 
 .pulse-circle-1
 {
-  r : 5;
+  r : 3;
   fill: #0984e3;
   animation: pulse 2s linear infinite;
 }
 
 .pulse-circle-2
 {
-  r : 5;
+  r : 3;
   fill: #0984e3;
   animation: pulse 2s linear infinite 1s;
-}
+} */
 
-@keyframes pulse
+
+
+/* @keyframes pulse
 {
     0%
     {
-        r : 5;
+        r : 3;
         opacity: 1;
     }
     100%
     {
-        r : 15;
+        r : 10;
         opacity: 0;
     }
-}
+} */
 
 
 /* @keyframes pulse1
 {
   0%
   {
-    r : 5;
+    r : 3;
     opacity: 1;
   }
   50%
@@ -83,7 +84,7 @@
   }
   50%
   {
-    r : 5;
+    r : 3;
     opacity: 0.5;
   }
   100%

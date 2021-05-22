@@ -13,6 +13,8 @@ export class KeyStatistics extends React.PureComponent {
 
         // return null;
 
+        // console.log(snapData,stockData);
+
         if(snapData && stockData)
         {
             return (

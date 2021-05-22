@@ -17,7 +17,7 @@ import { BusinessNews } from './BusinessNews/BusinessNews';
 import {readMarketData} from '../../exports/FormatData';
 import {getCandleDuration} from '../../exports/MessageStructure';
 import {getFuturePoints,getStartPointIndex} from '../../exports/FutureEntries';
-import convertToUNIX from '../../exports/TimeConverter';
+import {convertToUNIX} from '../../exports/TimeConverter';
 import '../../css/BusinessNews.css';
 import '../../css/MenuSection.css';
 import '../../css/CustomChartComponents.css';
@@ -245,13 +245,14 @@ class ScripsBody extends React.PureComponent
     SnapShotRequest(stockSymbol,stockNSECode,stockBSECode,stockExchange)
     {
         Axios.get(`http://${REQUEST_BASE_URL}:8000/detailed_view/snapshot/${stockSymbol}/${stockNSECode}/${stockBSECode}/${stockExchange}`,{ crossDomain: true }).then(({ data }) => {
+            console.log('data = ', data)
             if (data.code === 900 || data.msg === 'success' && data.data) {
-                console.log('data = ', data)
                 this.setState({ error: null, snapdata: data.data })
             } else {
                 this.setState({  error: data.msg })
             }
         }).catch(e => {
+            console.log(e.message);
             this.setState({  error: e.message })
         })
     }   
@@ -284,7 +285,6 @@ class ScripsBody extends React.PureComponent
 
     render()
     {
-
         // console.log('Rendering ScripsBody ...');
 
         let activeElement = this.props.active?.toLowerCase().replace(/ /g, '');
@@ -378,7 +378,9 @@ class ScripsBody extends React.PureComponent
         }
         else
         {
-            return <Spinner size={50}/>
+            return <div className="app__body">
+                <Spinner size={50}/>
+            </div>
         }
     }
 }

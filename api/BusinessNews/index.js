@@ -14,6 +14,7 @@ function Overview(req, res) {
             var tableName = "stock_list_master_reuters_screener" , 
             removeCols = ["ISIN","last_update_time_screener","last_update_time_reuters","reuters_industry",["screener_ratings_title","screener_ratings_link","screener_ann_title","screener_ann_date","screener_ratings_date","screener_ann_link"]];//[string] it mean it's a regex remove numbers
             conn.query(`SELECT * FROM  ${tableName} WHERE ric_code='${ricCode}'`,(e,r)=>{
+
             if(r && Array.isArray(r)){
                     r = r.map((v)=>{
                         if( v && 'object'===typeof v && !Array.isArray(v)){

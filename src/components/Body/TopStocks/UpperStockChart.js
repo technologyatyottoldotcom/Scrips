@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {ChartCanvas,Chart} from 'react-stockcharts';
+import { curveCardinal } from "d3-shape";
 import {AreaSeries,LineSeries,StraightLine,AlternatingFillAreaSeries} from 'react-stockcharts/lib/series';
 import {XAxis,YAxis} from 'react-stockcharts/lib/axes';
 import { format } from 'd3-format';
@@ -23,6 +24,7 @@ export class UpperStockChart extends React.PureComponent {
         let xScaleVal;
         let displayxAccessorVal;
         let start,end;
+        let openPrice;
 
 
 
@@ -46,6 +48,19 @@ export class UpperStockChart extends React.PureComponent {
         end = xAccessorVal(dataVal[0]);
         const xExtents = [start,end];
 
+        if(this.props.openPrice && this.props.openPrice !== 'NaN')
+        {
+            openPrice = parseFloat(this.props.openPrice.replace(',',''))
+        }
+        else
+        {
+            openPrice = 0;
+        }
+
+        // console.log(this.props.openPrice,typeof this.props.openPrice);
+
+        // console.log(openPrice);
+
         return (
             <ChartCanvas 
                 ratio={ratio} 
@@ -63,28 +78,14 @@ export class UpperStockChart extends React.PureComponent {
                 useCrossHairStyleCursor={false}
 			>
 				<Chart id={0} yExtents={d=> d.open}>
-                    <defs>
-						<linearGradient id="MyGradientTop" x1="0" y1="100%" x2="0" y2="0%">
-							<stop offset="0%" stopColor="#dff9fb" stopOpacity={0.1} />
-							<stop offset="70%" stopColor="#55E6C1" stopOpacity={0.1} />
-							<stop offset="100%" stopColor="#55E6C1" stopOpacity={0.1} />
-						</linearGradient>
-                        <linearGradient id="MyGradientBottom" x1="0" y1="100%" x2="0" y2="0%">
-							<stop offset="0%" stopColor="#dff9fb" stopOpacity={0.1} />
-							<stop offset="70%" stopColor="#e74c3c" stopOpacity={0.1} />
-							<stop offset="100%" stopColor="#e74c3c" stopOpacity={0.1} />
-						</linearGradient>
-					</defs>
-					<AreaSeries yAccessor={d => d.open} strokeWidth={2} stroke="#00b894" fill="url(#MyGradient)"/>
-                    {/* <AlternatingFillAreaSeries 
+                    
+					<LineSeries 
                         yAccessor={d => d.open} 
-                        baseAt={21.9} 
-                        fill={{
-                            top : "#ffffff",
-                            bottom : "#ffffff"
-                        }}    
+                        strokeWidth={1} 
+                        stroke={this.props.status === 'positive' ? "#00b894" : "#e51a4b"} 
+                        interpolation={curveCardinal}
                     />
-                    <StraightLine strokeDasharray="ShortDash" strokeWidth={2} stroke="#E3342F" opacity={1} yValue={21.9}/> */}
+                    <StraightLine strokeDasharray="ShortDash" strokeWidth={1} stroke={this.props.status === 'positive' ? "#00b894" : "#e51a4b"} opacity={1} yValue={openPrice}/>
 
                 </Chart>
 			</ChartCanvas>

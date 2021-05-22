@@ -1075,11 +1075,6 @@
   opacity: 0.5;
 }
 
-.app__body .app__body__left .chart__container .stock__chart g 
-{
-  fill : '#00a0e3';
-}
-
 .app__body .app__body__left .chart__container .chart__range 
 {
   height: 7%;
@@ -1267,8 +1262,8 @@
 /*app__footer*/
 .app__footer 
 {
-  position: absolute;
-  bottom: 0;
+  /* position: absolute; */
+  /* bottom: 0; */
   width: 100%;
   height: 3vh;
   display: flex;

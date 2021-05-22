@@ -1,19 +1,19 @@
 {
   "files": {
-    "main.css": "./static/css/main.3bd64f36.chunk.css",
-    "main.js": "./static/js/main.37f82290.chunk.js",
-    "main.js.map": "./static/js/main.37f82290.chunk.js.map",
-    "runtime-main.js": "./static/js/runtime-main.563f382d.js",
-    "runtime-main.js.map": "./static/js/runtime-main.563f382d.js.map",
+    "main.css": "./static/css/main.605e0e57.chunk.css",
+    "main.js": "./static/js/main.ed9a0136.chunk.js",
+    "main.js.map": "./static/js/main.ed9a0136.chunk.js.map",
+    "runtime-main.js": "./static/js/runtime-main.db0a2727.js",
+    "runtime-main.js.map": "./static/js/runtime-main.db0a2727.js.map",
     "static/css/2.54bc7213.chunk.css": "./static/css/2.54bc7213.chunk.css",
-    "static/js/2.6717e217.chunk.js": "./static/js/2.6717e217.chunk.js",
-    "static/js/2.6717e217.chunk.js.map": "./static/js/2.6717e217.chunk.js.map",
-    "static/js/3.3ba675e5.chunk.js": "./static/js/3.3ba675e5.chunk.js",
-    "static/js/3.3ba675e5.chunk.js.map": "./static/js/3.3ba675e5.chunk.js.map",
+    "static/js/2.b3a995f3.chunk.js": "./static/js/2.b3a995f3.chunk.js",
+    "static/js/2.b3a995f3.chunk.js.map": "./static/js/2.b3a995f3.chunk.js.map",
+    "static/js/3.b1585a0d.chunk.js": "./static/js/3.b1585a0d.chunk.js",
+    "static/js/3.b1585a0d.chunk.js.map": "./static/js/3.b1585a0d.chunk.js.map",
     "index.html": "./index.html",
     "static/css/2.54bc7213.chunk.css.map": "./static/css/2.54bc7213.chunk.css.map",
-    "static/css/main.3bd64f36.chunk.css.map": "./static/css/main.3bd64f36.chunk.css.map",
-    "static/js/2.6717e217.chunk.js.LICENSE.txt": "./static/js/2.6717e217.chunk.js.LICENSE.txt",
+    "static/css/main.605e0e57.chunk.css.map": "./static/css/main.605e0e57.chunk.css.map",
+    "static/js/2.b3a995f3.chunk.js.LICENSE.txt": "./static/js/2.b3a995f3.chunk.js.LICENSE.txt",
     "static/media/ChevronDown.4cf9f8e9.svg": "./static/media/ChevronDown.4cf9f8e9.svg",
     "static/media/OHLC.a0e591fc.svg": "./static/media/OHLC.a0e591fc.svg",
     "static/media/analysis.50e53248.svg": "./static/media/analysis.50e53248.svg",
@@ -61,10 +61,10 @@
     "static/media/zoom.504c7083.svg": "./static/media/zoom.504c7083.svg"
   },
   "entrypoints": [
-    "static/js/runtime-main.563f382d.js",
+    "static/js/runtime-main.db0a2727.js",
     "static/css/2.54bc7213.chunk.css",
-    "static/js/2.6717e217.chunk.js",
-    "static/css/main.3bd64f36.chunk.css",
-    "static/js/main.37f82290.chunk.js"
+    "static/js/2.b3a995f3.chunk.js",
+    "static/css/main.605e0e57.chunk.css",
+    "static/js/main.ed9a0136.chunk.js"
   ]
 }

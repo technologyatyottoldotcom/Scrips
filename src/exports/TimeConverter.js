@@ -1,6 +1,6 @@
 const moment = require('moment');
 
-function convertToUNIX(range)
+export function convertToUNIX(range)
 {
     console.log(range);
     let curr = moment();
@@ -20,4 +20,3 @@ function convertToUNIX(range)
     }   
 }
 
-module.exports = convertToUNIX;
