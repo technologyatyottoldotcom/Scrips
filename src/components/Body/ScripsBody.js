@@ -17,7 +17,7 @@ import { BusinessNews } from './BusinessNews/BusinessNews';
 import {readMarketData,readMarketStatus} from '../../exports/FormatData';
 import {getCandleDuration} from '../../exports/MessageStructure';
 import {getFuturePoints,getStartPointIndex} from '../../exports/FutureEntries';
-import {convertToUNIX} from '../../exports/TimeConverter';
+import {convertToUNIX,dateToUNIX} from '../../exports/TimeConverter';
 import '../../css/BusinessNews.css';
 import '../../css/MenuSection.css';
 import '../../css/CustomChartComponents.css';
@@ -27,6 +27,8 @@ import 'rsuite/dist/styles/rsuite-default.css';
 
 const REQUEST_BASE_URL = 'localhost';
 
+let updateInterval,bigdatainterval;
+
 
 class ScripsBody extends React.PureComponent
 {
@@ -35,7 +37,9 @@ class ScripsBody extends React.PureComponent
     {
         super(props);
         this.state = {
+            initial : true,
             chartdata : null,
+            bigchartdata : null,
             chartProps : null,
             stockData : '',
             tempData : '',
@@ -44,6 +48,7 @@ class ScripsBody extends React.PureComponent
             snapdata : null,
             isLoaded : false,
             dataLoaded : false,
+            bigdataLoaded : false,
             range : 'D',
             endpoint : 'wss://masterswift-beta.mastertrust.co.in/hydrasocket/v2/websocket?access_token=qaoSOB-l4jmwXlxlucY4ZTKWsbecdrBfC7GoHjCRy8E.soJkcdbrMmew-w1C0_KZ2gcQBUPLlPTYNbt9WLJN2g8',
             ws : null,
@@ -60,6 +65,7 @@ class ScripsBody extends React.PureComponent
         this.makeSocketConnection()
         .then(()=>{
             this.loadChartData(this.state.range,options.candle,options.duration,options.mixed);
+            this.loadBigChartData('MAX',3,1,true);
             this.checkConnection();
             this.SnapShotRequest(this.state.stockDetails.stockSymbol,this.state.stockDetails.stockNSECode,this.state.stockDetails.stockBSECode,this.state.stockDetails.stockExchange.exchange);
         });
@@ -75,9 +81,11 @@ class ScripsBody extends React.PureComponent
             this.setState({
                 stockDetails : this.props.stockDetails,
                 oldStockDetails : this.state.stockDetails,
+                stockData : '',
                 isLoaded : false
             },()=>{
                 this.loadChartData(this.state.range,options.candle,options.duration,options.mixed);
+                this.loadBigChartData('MAX',3,1,true);
                 this.checkConnection();
                 this.SnapShotRequest(this.state.stockDetails.stockSymbol,this.state.stockDetails.stockNSECode,this.state.stockDetails.stockBSECode,this.state.stockDetails.stockExchange.exchange);
 
@@ -130,7 +138,7 @@ class ScripsBody extends React.PureComponent
     feedLiveData(ws)
     {
 
-        console.log(this.state);
+        // console.log(this.state);
         if(this.state.oldStockDetails.stockCode)
         {
             console.log('unsubscribe ',this.state.oldStockDetails.stockCode);
@@ -149,7 +157,9 @@ class ScripsBody extends React.PureComponent
 
         ws.onmessage = (response)=>{
 
-            // console.log(response.data);
+            // console.log(response);
+            // console.log(response.data.size);
+            // console.log('data');
             
             var reader = new FileReader();
             
@@ -157,6 +167,7 @@ class ScripsBody extends React.PureComponent
             let convertedData;
             reader.onloadend = (event) => {
                 let data = new Uint8Array(reader.result);
+                // console.log(data);
                 if(this.state.stockData)
                 {
                     convertedData = readMarketData(data,this.state.stockData.close_price);
@@ -165,12 +176,16 @@ class ScripsBody extends React.PureComponent
                 {
                     convertedData = readMarketData(data,-1);
                 }
-                // console.log(convertedData.last_traded_price);
-                //get price change
 
-                this.setState({
-                    stockData : convertedData
-                })
+                let livedata = convertedData.livedata;
+
+                //get price change
+                if(response.data.size === convertedData.size)
+                {
+                    this.setState({
+                        stockData : livedata
+                    })
+                }
             }
         }
 
@@ -194,7 +209,6 @@ class ScripsBody extends React.PureComponent
 
         let startUNIX = convertToUNIX(type);
 
-        console.log(startUNIX,type,ct,dd);
 
         let exchange = this.props.stockDetails.stockExchange.exchange;
         let code;
@@ -207,8 +221,6 @@ class ScripsBody extends React.PureComponent
         {
             code = this.state.stockDetails.stockBSECode;
         }
-
-        
 
         Axios.get(`http://${REQUEST_BASE_URL}:8000/stockdata`,{
             params : {
@@ -229,7 +241,7 @@ class ScripsBody extends React.PureComponent
             {
                 
                 let stockArray = data.data;
-                console.log(stockArray);
+                // console.log(stockArray);
                 let tempDataArray = [];
                 // console.log(stockArray);
                 stockArray.forEach(d =>{
@@ -253,30 +265,245 @@ class ScripsBody extends React.PureComponent
 
                 // console.log(startIndex);
 
-                let mergedData = tempDataArray;
-                let futurePoints = getFuturePoints(type);
+                let futurePoints = getFuturePoints(lastPoint,type);
                 // console.log(futurePoints);
-                mergedData = mergedData.concat(futurePoints);
+                // mergedData = mergedData.concat(futurePoints);
 
 
                 this.setState({
-                    chartdata : mergedData,
+                    chartdata : tempDataArray,
                     isLoaded : true,
                     dataLoaded : true,
                     chartProps : {
-                        chartdata : mergedData,
+                        chartdata : tempDataArray,
+                        extradata : futurePoints,
                         lastPoint : lastPoint,
                         startIndex : startIndex,
                         extraPoints : futurePoints.length,
                         range : type
                     }
+                },()=>{
+                    this.updateChartData(type,ct,dd,mixed);
                 })
             }
 
             // console.log('chart data');
+
+            //make an interval to update data points
+            
             
         })
     } 
+
+    async updateChartData(type,ct,dd,mixed)
+    {
+
+        updateInterval = setInterval(()=>{
+
+            let lastPoint = this.state.chartProps.lastPoint;
+            let startUNIX = dateToUNIX(lastPoint.date);
+
+            // console.log(lastPoint.date,lastPoint.open);
+
+            // console.log(startUNIX,type,ct,dd);
+
+            let exchange = this.props.stockDetails.stockExchange.exchange;
+            let code;
+
+            if(exchange === 'NSE')
+            {
+                code = this.state.stockDetails.stockNSECode;
+            }
+            else if(exchange === 'BSE')
+            {
+                code = this.state.stockDetails.stockBSECode;
+            }
+
+            Axios.get(`http://${REQUEST_BASE_URL}:8000/stockdata`,{
+                params : {
+                    'ct' : ct,
+                    'starttime' : startUNIX,
+                    'dd' : dd,
+                    'exchange' : exchange,
+                    'token' : this.state.stockDetails.stockCode,
+                    'code' : code,
+                    'mixed' : mixed,
+                    'type' : type
+                }
+            })
+            .then(res=>{
+                const data = res.data;
+                if(data.status === 'success')
+                {
+                    
+                    let stockArray = data.data;
+                    // console.log(stockArray);
+                    if(stockArray.length > 0)
+                    {
+                        let tempDataArray = this.state.chartProps.chartdata;
+                        // console.log(stockArray);
+                        stockArray.forEach(d =>{
+                            let dobj = {
+                                date : new Date(d[0]),
+                                open : parseFloat(d[1]),
+                                high : parseFloat(d[2]),
+                                low : parseFloat(d[3]),
+                                close : parseFloat(d[4]),
+                                volume : parseInt(d[5])
+                            }
+
+                            // console.log(dobj.date,dobj.open);
+
+                            tempDataArray.push(dobj);
+
+                        });
+
+                        // console.log(tempDataArray);
+                        let lastPoint = tempDataArray[tempDataArray.length - 1];
+                        // console.log(lastPoint);
+                        let firstPoint = tempDataArray[0];
+                        let startIndex = getStartPointIndex(tempDataArray,type,lastPoint,firstPoint);
+
+                        // console.log(startIndex);
+
+                        let futurePoints = getFuturePoints(lastPoint,type);
+                        // console.log(futurePoints);
+                        // mergedData = mergedData.concat(futurePoints);
+
+
+                        this.setState({
+                            initial : false,
+                            chartdata : tempDataArray,
+                            isLoaded : true,
+                            dataLoaded : true,
+                            chartProps : {
+                                chartdata : tempDataArray,
+                                extradata : futurePoints,
+                                lastPoint : lastPoint,
+                                startIndex : startIndex,
+                                extraPoints : futurePoints.length,
+                                range : type
+                            }
+                        },()=>{
+                            // console.log('add new point')
+                        })
+                    }
+                    else
+                    {
+                        // console.log('Wait');
+                    }
+                }
+
+                // console.log('chart data');
+
+                //make an interval to update data points
+                
+                
+            })
+        },5000)
+
+    }
+
+    loadBigChartData(type,ct,dd,mixed)
+    {
+        this.setState({
+            bigdataLoaded : false
+        })
+
+        let startUNIX = convertToUNIX(type);
+
+        console.log(startUNIX,type,ct,dd);
+
+        let exchange = this.props.stockDetails.stockExchange.exchange;
+        let code;
+
+        if(exchange === 'NSE')
+        {
+            code = this.state.stockDetails.stockNSECode;
+        }
+        else if(exchange === 'BSE')
+        {
+            code = this.state.stockDetails.stockBSECode;
+        }
+
+        Axios.get(`http://${REQUEST_BASE_URL}:8000/stockdata`,{
+            params : {
+                'ct' : ct,
+                'starttime' : startUNIX,
+                'dd' : dd,
+                'exchange' : exchange,
+                'token' : this.state.stockDetails.stockCode,
+                'code' : code,
+                'mixed' : mixed,
+                'type' : type
+            }
+        })
+        .then(res=>{
+            const data = res.data;
+            // console.log(data);
+            if(data.status === 'success')
+            {
+                
+                let stockArray = data.data;
+                // console.log(stockArray);
+                let tempDataArray = [];
+                // console.log(stockArray);
+                stockArray.forEach(d =>{
+                    let dobj = {
+                        date : new Date(d[0]),
+                        open : parseFloat(d[1]),
+                        high : parseFloat(d[2]),
+                        low : parseFloat(d[3]),
+                        close : parseFloat(d[4]),
+                        volume : parseInt(d[5])
+                    }
+
+                    tempDataArray.push(dobj);
+
+                });
+
+                this.setState({
+                    bigdataLoaded : true,
+                    bigchartdata : tempDataArray
+                })
+            }
+
+           
+            
+            
+        })
+    }
+
+    async loadBigChartConfig(type)
+    {
+        console.log('load big chart config');
+        
+        if(this.state.bigdataLoaded)
+        {
+            clearInterval(bigdatainterval);
+            let tempDataArray = this.state.bigchartdata;
+            console.log('big data loaded ');
+            console.log(tempDataArray.length);
+            let lastPoint = tempDataArray[tempDataArray.length - 1];
+            let firstPoint = tempDataArray[0];
+            let startIndex = getStartPointIndex(tempDataArray,type,lastPoint,firstPoint);
+            let futurePoints = getFuturePoints(lastPoint,type);
+            this.setState({
+                chartdata : tempDataArray,
+                isLoaded : true,
+                dataLoaded : true,
+                chartProps : {
+                    chartdata : tempDataArray,
+                    extradata : futurePoints,
+                    lastPoint : lastPoint,
+                    startIndex : startIndex,
+                    extraPoints : futurePoints.length,
+                    range : type
+                }
+            })
+        }
+        
+    }
 
     isMarketOpen(ws)
     {
@@ -291,6 +518,7 @@ class ScripsBody extends React.PureComponent
         ws.onmessage = (response)=>{
 
             console.log('Got');
+            console.log(response);
             console.log(response.data);
             
             var reader = new FileReader();
@@ -301,7 +529,7 @@ class ScripsBody extends React.PureComponent
                 let data = new Uint8Array(reader.result);
                 console.log(data);
                 convertedData = readMarketStatus(data);
-                // console.log(convertedData);
+                console.log(convertedData);
             }
         }
 
@@ -338,14 +566,27 @@ class ScripsBody extends React.PureComponent
     {
         let options = getCandleDuration(range);
         console.log(options);
-        this.loadChartData(range,options.candle,options.duration,options.mixed)
-        .then(()=>{
+        clearInterval(updateInterval);
+        if(range === '1Y' ||  range === '5Y' || range === 'MAX')
+        {
             this.setState({
-                range : range,
-            })
-        })
+                dataLoaded : false
+            });
+            bigdatainterval = setInterval(()=>{
+                this.loadBigChartConfig(range);
+            },1000);
+        }
+        else
+        {
+            this.loadChartData(range,options.candle,options.duration,options.mixed)
+            .then(()=>{
+                this.setState({
+                    range : range            
+                });
+            });
+        }
+        
     }
-
     
 
     render()
@@ -413,7 +654,9 @@ class ScripsBody extends React.PureComponent
                     }
                     <div className="app__body__left">
                         <ChartContainer 
-                            data={this.state.chartProps.chartdata} 
+                            initial={this.state.initial}
+                            data={this.state.chartProps.chartdata}
+                            extradata={this.state.chartProps.extradata} 
                             stockData={this.state.stockData} 
                             stockDetails={this.state.stockDetails}
                             isLoaded={this.state.isLoaded}
@@ -430,6 +673,7 @@ class ScripsBody extends React.PureComponent
                         <KeyStatistics 
                             stockData={this.state.stockData} 
                             snapdata={this.state.snapdata}
+                            lastPoint={this.state.lastPoint}
                         />
                     </div>
                     <div className="app__body__right">

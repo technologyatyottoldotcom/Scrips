@@ -26,7 +26,9 @@ export class UpperStock extends React.PureComponent {
             endpoint : 'wss://masterswift-beta.mastertrust.co.in/hydrasocket/v2/websocket?access_token=qaoSOB-l4jmwXlxlucY4ZTKWsbecdrBfC7GoHjCRy8E.soJkcdbrMmew-w1C0_KZ2gcQBUPLlPTYNbt9WLJN2g8',
         }
         this.getIndexData = this.getIndexData.bind(this);
+        this.updateIndexData = this.updateIndexData.bind(this);
         this.feedLiveData = this.feedLiveData.bind(this);
+        
     }
 
     componentDidMount()
@@ -37,6 +39,7 @@ export class UpperStock extends React.PureComponent {
         });
         this.setInitialSize();
         this.getIndexData();
+        
     }
 
     setInitialSize()
@@ -45,7 +48,7 @@ export class UpperStock extends React.PureComponent {
         let ht = $('.upper__stock__info').height();
         this.setState({
             chartWidth : 80,
-            chartHeight : 20
+            chartHeight : 40
         });
     }
 
@@ -58,26 +61,59 @@ export class UpperStock extends React.PureComponent {
             // console.log(stockArray);
             stockArray.forEach(d =>{
                 let dobj = {
-                    date : new Date(d['Date']),
-                    open : parseFloat(d['Open']),
-                    high : parseFloat(d["High"]),
-                    low : parseFloat(d["Low"]),
-                    close : parseFloat(d['Close']),
-                    volume : parseInt(d['Volume'])
+                    date : new Date(d['TIMESTAMP']),
+                    open : parseFloat(d['OPEN']),
+                    high : parseFloat(d["HIGH"]),
+                    low : parseFloat(d["LOW"]),
+                    close : parseFloat(d['CLOSE']),
+                    volume : parseInt(d['VOLUME'])
                 }
 
                     tempDataArray.push(dobj);
                 });
-            // console.log(tempDataArray);
 
             this.setState({
                 isLoading : false,
                 data : tempDataArray
+            },()=>{
+                this.updateIndexData();
             });
         })
         .catch((error)=>{
             console.log(error);
         })
+    }
+
+    updateIndexData()
+    {
+        setInterval(()=>{
+
+            Axios.get(`http://${REQUEST_BASE_URL}:8000/indexdata/${this.props.Symbol}`)
+            .then((data)=>{
+                let stockArray = data.data.chartdata;
+                let tempDataArray = [];
+                // console.log(stockArray);
+                stockArray.forEach(d =>{
+                    let dobj = {
+                        date : new Date(d['TIMESTAMP']),
+                        open : parseFloat(d['OPEN']),
+                        high : parseFloat(d["HIGH"]),
+                        low : parseFloat(d["LOW"]),
+                        close : parseFloat(d['CLOSE']),
+                        volume : parseInt(d['VOLUME'])
+                    }
+
+                        tempDataArray.push(dobj);
+                    });
+
+                this.setState({
+                    data : tempDataArray
+                });
+            })
+            .catch((error)=>{
+                console.log(error);
+            })
+        },10000)
     }
 
     feedLiveData(ws)
@@ -106,12 +142,17 @@ export class UpperStock extends React.PureComponent {
                 {
                     convertedData = readMarketData(data,-1);
                 }
+
+                let livedata = convertedData.livedata;
                 // console.log(convertedData.last_traded_price);
                 //get price change
 
-                this.setState({
-                    stockData : convertedData
-                })
+                if(response.data.size === convertedData.size)
+                {
+                    this.setState({
+                        stockData : livedata,
+                    })
+                }
             }
         }
     }
@@ -148,12 +189,28 @@ export class UpperStock extends React.PureComponent {
        
     }
 
+    convertIntoPriceFormat(num,frac=2)
+    {
+        if(num)
+        {
+            return num.toLocaleString('en-IN',{
+                minimumFractionDigits: frac,
+                currency: 'INR'
+            });
+        }
+        else
+        {
+            return num;
+        }
+        
+    }
+
     render() {
 
         const {Name,Symbol} = this.props;
         let stockData = this.state.stockData;
 
-        let TradePrice = stockData.last_traded_price;
+        let TradePrice = this.convertIntoPriceFormat(stockData.last_traded_price);
         let change_price = parseFloat(stockData.change_price);
 
         let priceClass = change_price >= 0 ? 'positive' : 'negative';
@@ -194,7 +251,7 @@ export class UpperStock extends React.PureComponent {
                         </div>
                     </div>
                 </div>
-                <div className="upper__stock__chart">
+                <div className="upper__stock__chart" style={{background : 'rgba(0,0,0,0)'}}>
                     <UpperStockChart 
                         data={this.state.data} 
                         width={this.state.chartWidth}   

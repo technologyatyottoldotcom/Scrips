@@ -427,6 +427,22 @@ export class ChartContainer extends React.PureComponent {
        
     }
 
+    convertIntoPriceFormat(num,frac=2)
+    {
+        if(num)
+        {
+            return num.toLocaleString('en-IN',{
+                minimumFractionDigits: frac,
+                currency: 'INR'
+            });
+        }
+        else
+        {
+            return num;
+        }
+        
+    }
+
     render() {
 
         // console.log('Rendering chart...');
@@ -434,7 +450,7 @@ export class ChartContainer extends React.PureComponent {
         // console.log(this.props.data);
         let stockData = this.props.stockData;
 
-        let TradePrice = stockData.last_traded_price;
+        let TradePrice = this.convertIntoPriceFormat(stockData.last_traded_price);
         let dPrice = (TradePrice+'').split('.')[0];
         let fPrice = (TradePrice+'').split('.')[1];
 
@@ -604,7 +620,7 @@ export class ChartContainer extends React.PureComponent {
                                             return <AnimatedDigit 
                                                 digit={n} 
                                                 key={i}
-                                                size={30}
+                                                size={28}
                                             />
                                         })}
                                     </div>
@@ -619,10 +635,6 @@ export class ChartContainer extends React.PureComponent {
                                         })}
                                     </div>
                                     
-                                </div>
-                                <div className="stock__purchase">
-                                    <div className="buy__stock"><img src={PlusIcon} alt=""/></div>
-                                    <div className="sell__stock"><img src={MinusIcon} alt=""/></div>
                                 </div>
                             </div>
                             <div className="stock__price__change">
@@ -653,12 +665,19 @@ export class ChartContainer extends React.PureComponent {
                                 {/* <ChartClock /> */}
                             </div>
                         </div>
+                        <div className="stock__purchase">
+                            <div className="buy__stock"><img src={PlusIcon} alt=""/></div>
+                            <div className="sell__stock"><img src={MinusIcon} alt=""/></div>
+                        </div>
                         {this.props.dataLoaded ? 
                             <div className="stock__chart">
                                 <StockChart 
                                     key={1} 
                                     openPrice={this.props.stockData.open_price}
-                                    data={this.props.data} 
+                                    closePrice={this.props.stockData.close_price}
+                                    currentPrice={this.props.stockData.last_traded_price}
+                                    initial={this.props.initial}
+                                    // stockData={this.props.stockData}
                                     range={this.state.range} 
                                     width={this.state.chartWidth} 
                                     height={this.state.chartHeight} 

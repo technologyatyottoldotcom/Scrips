@@ -915,8 +915,8 @@
   top: 0%;
   left: 0%;
   z-index: 10;
-  padding-left: 20px;
-  padding-top: 15px;
+  padding-left: 10px;
+  padding-top: 5px;
   display: inline-block;
 }
 
@@ -986,7 +986,7 @@
 .app__body .app__body__left .chart__container .stock__info .stock__price__details .price__decimals 
 {
   color: var(--font-primary);
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 900;
 }
 
@@ -1019,32 +1019,35 @@
   font-weight: 700;
 }
 
-.app__body .app__body__left .chart__container .stock__info .stock__purchase 
+.app__body .app__body__left .chart__container .stock__purchase 
 {
+  position: absolute;
+  top: 5%;
+  right: 5%;
+  z-index: 10;
   display: flex;
-  margin-left: 30px;
 }
 
-.app__body .app__body__left .chart__container .stock__info .stock__purchase>div 
+.app__body .app__body__left .chart__container .stock__purchase>div 
 {
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   display: flex;
   justify-content: center;
   align-items: center;
   background-color: #00a0e3;
-  margin-right: 5px;
   border-radius: 50%;
+  margin: 0 5px;
   cursor: pointer;
 }
 
-.app__body .app__body__left .chart__container .stock__info .stock__purchase>div img 
+.app__body .app__body__left .chart__container .stock__purchase>div img 
 {
-  width: 10px;
-  height: 10px;
+  width: 15px;
+  height: 15px;
 }
 
-.app__body .app__body__left .chart__container .stock__info .stock__purchase>div.sell__stock 
+.app__body .app__body__left .chart__container .stock__purchase>div.sell__stock 
 {
   background-color: var(--main-red);
 }

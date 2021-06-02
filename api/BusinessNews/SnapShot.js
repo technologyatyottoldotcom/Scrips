@@ -834,7 +834,7 @@ const MYSQL = (data,func) => {
         SELECT * FROM fundamental_data_reuters_balancesheet_quartely WHERE stockCode='${reutersCode}' AND fieldName REGEXP 'Total Equity|Total Debt|Total Assets|Total Current Liabilities' LIMIT 4;
         SELECT * FROM fundamental_data_screener_balancesheet_screener WHERE stockCode='${nseCode}' AND fieldName REGEXP 'Borrowings|Share Capital +|Reserves' LIMIT 3;
         
-        SELECT * FROM fundamental_data_screener_shareholding_pattern WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Promoters +%') LIMIT 1;
+        SELECT * FROM fundamental_data_screener_shareholding_pattern_screener WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Promoters +%') LIMIT 1;
      
         SELECT * FROM fundamental_data_reuters_income_quartely WHERE stockCode='${reutersCode}' AND fieldName = TRIM('Net Income') LIMIT 1;
         SELECT * FROM fundamental_data_screener_profitloss_screener WHERE stockCode='${nseCode}' AND fieldName = TRIM('Net Profit') LIMIT 1;
@@ -877,7 +877,6 @@ const StockSnapShot = (stock)=>{
 
                 snp.Beta().
                 then(response=>{
-                    // console.log(response);
                     resolve({
                         'MarketCap' : FormatValue(snp.MarketCap(),'Market_Cap','s'),
                         'PriceToEarnings' : FormatValue(snp.PriceToEarnings(),'Price_To_Earnings','rs'),
@@ -924,6 +923,7 @@ const StockSnapShot = (stock)=>{
             }
             else
             {
+                console.log(e)
                 reject(SendResponse(106))
             }
      

@@ -1,5 +1,4 @@
 const moment = require('moment');
-const { fi } = require('./MathematicalIndicators');
 
 
 //please don't specify date in DD-MM-YYYY format for all months
@@ -21,6 +20,56 @@ const holidays = [
         '15-10-2021',
         '4-11-2021'
 ];
+
+function getNextMonths(days,isCount=true)
+{
+    //does not count saturday and sunday
+    let nod = 0,incr = 1;
+    let futureDays = [];
+    const defaultStartTime = {
+        startHour : 9,
+        startMinute : 15,
+        startSecond : 0
+    }
+    const defaultEndTime = {
+        endHour : 15,
+        endMinute : 29,
+        endSecond : 0
+    }
+    if(isCount)
+    {
+        let today = moment();
+
+        if(isWorkingDay(today))
+        {
+            futureDays.push({
+                date : today.clone(),
+                startHour : parseInt(today.format('H')),
+                startMinute : parseInt(today.format('m')),
+                startSecond : parseInt(today.format('s')),
+                ...defaultEndTime
+            })
+        }
+    }
+
+    let addedDay = moment();
+    
+    while(nod < days)
+    {
+        addedDay = addedDay.add(1,'month').startOf('month').clone();
+        nod++;
+        // console.log(addedDay,nod);
+        futureDays.push({
+            date : addedDay.clone(),
+            ...defaultStartTime,
+            ...defaultEndTime
+        });
+    }
+
+    // console.log(futureDays);
+
+    return futureDays;
+}
 
 function getNextDays(days,isCount=true)
 {
@@ -72,9 +121,10 @@ function getNextDays(days,isCount=true)
     return futureDays;
 }
 
-function getNextMinutes(minutes)
+function getNextMinutes(curr,minutes)
 {
-    let today = moment();
+    let today = curr;
+    console.log(today);
     let futureDays = [];
 
     const defaultStartTime = {
@@ -199,7 +249,7 @@ function generatePointsMinutes(days,incr)
 {
     let points = [];
 
-    console.log('generate points');
+    // console.log('generate points');
 
     days.forEach(day => {
         
@@ -226,7 +276,7 @@ function generatePointsMinutes(days,incr)
 
     });
 
-    console.log(points.length);
+    // console.log(points.length);
     return points;
 
 }
@@ -311,81 +361,83 @@ function isEnoughTime(day,time)
     }
 }
 
-export function getFuturePoints(range)
+export function getFuturePoints(lastPoint,range)
 {
 
     let futureDaysArr,points;
 
+    let curr = moment(lastPoint.date);
+
     switch(range){
         case 'D' : 
-            futureDaysArr = getNextMinutes(30);
-            console.log(futureDaysArr);
+            futureDaysArr = getNextMinutes(curr,30);
+            // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,1);
             // console.log(points);
             return points;
         
         case '1D' : 
             futureDaysArr = getNextDays(1);
-            console.log(futureDaysArr);
+            // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,1);
             // console.log(points);
             return points;
         
         case '5D' : 
             futureDaysArr = getNextDays(5);
-            console.log(futureDaysArr);
+            // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,5);
             // console.log(points);
             return points;
         
         case '1M' : 
             futureDaysArr = getNextDays(10);
-            console.log(futureDaysArr);
+            // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,30);
             // console.log(points);
             return points;
         
         case '3M' : 
             futureDaysArr = getNextDays(10);
-            console.log(futureDaysArr);
+            // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,60);
             // console.log(points);
             return points;
         
         case '6M' : 
             futureDaysArr = getNextDays(10);
-            console.log(futureDaysArr);
+            // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,120);
             // console.log(points);
             return points;
         
         case 'YTD' : 
             futureDaysArr = getNextDays(60,false);
-            console.log(futureDaysArr);
+            // console.log(futureDaysArr);
             points = generatePointsDays(futureDaysArr);
             return points;
         
         case '1Y' : 
-            futureDaysArr = getNextDays(60,false);
-            console.log(futureDaysArr);
+            futureDaysArr = getNextMonths(12,false);
+            // console.log(futureDaysArr);
             points = generatePointsDays(futureDaysArr);
             return points;
         
         case '5Y' : 
-            futureDaysArr = getNextDays(60,false);
-            console.log(futureDaysArr);
+            futureDaysArr = getNextMonths(24,false);
+            // console.log(futureDaysArr);
             points = generatePointsDays(futureDaysArr);
             return points;
 
         case 'MAX' : 
-            futureDaysArr = getNextDays(60,false);
-            console.log(futureDaysArr);
+            futureDaysArr = getNextMonths(60,false);
+            // console.log(futureDaysArr);
             points = generatePointsDays(futureDaysArr);
             return points;
 
         default : 
             futureDaysArr = getNextDays(5);
-            console.log(futureDaysArr);
+            // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,60);
             // console.log(points);
             return points;

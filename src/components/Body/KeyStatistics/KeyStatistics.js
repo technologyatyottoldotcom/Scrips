@@ -4,10 +4,27 @@ import Spinner from '../../Loader/Spinner';
 
 export class KeyStatistics extends React.PureComponent {
 
+    convertIntoPriceFormat(num,frac=2)
+    {
+        if(num)
+        {
+            return num.toLocaleString('en-IN',{
+                minimumFractionDigits: frac,
+                currency: 'INR'
+            });
+        }
+        else
+        {
+            return num;
+        }
+    }
+
     render() {
 
         let stockData = this.props.stockData;
         let snapData = this.props.snapdata;
+
+        // console.log(lastPoint);
         // console.log(stockData);
         // console.log(stockData.close_price);
 
@@ -25,20 +42,40 @@ export class KeyStatistics extends React.PureComponent {
                     <div className="ks__container">
                         <div className="ks__container__half">
                             <div className="ks__slot">
-                                <Statistics type="number" name="Previous Close" value={stockData.close_price}/>
-                                <Statistics type="number" name="Open Price" value={stockData.open_price}/>
-                                <Statistics type="number" name="Volume('000)" value={stockData.trade_volume}/>
+                                <Statistics 
+                                    type="number" 
+                                    name="Previous Close" 
+                                    value={this.convertIntoPriceFormat(stockData.close_price)}
+                                />
+                                <Statistics 
+                                    type="number" 
+                                    name="Open Price" 
+                                    value={this.convertIntoPriceFormat(stockData.open_price)}
+                                />
+                                <Statistics 
+                                    type="number" 
+                                    name="Volume('000)" 
+                                    value={this.convertIntoPriceFormat(stockData.trade_volume,0)}
+                                />
                                 {/* <Statistics type="number" name="Previous Close" value="2,108.91"/>
                                 <Statistics type="number" name="Open Price" value="2,011.86"/>
                                 <Statistics type="number" name="Volume('000)" value="22,38,912"/> */}
                             </div>
                             <div className="ks__slot">
-                                <Statistics type="range" name="Day Range" value={[stockData.open_price , stockData.close_price]}/>  
-                                <Statistics type="range" name="52-week range" value={[stockData.yearly_low_price,stockData.yearly_high_price]}/> 
+                                <Statistics 
+                                    type="range" 
+                                    name="Day Range" 
+                                    value={[this.convertIntoPriceFormat(stockData.open_price) , this.convertIntoPriceFormat(stockData.close_price)]}
+                                />  
+                                <Statistics 
+                                    type="range" 
+                                    name="52-week range" 
+                                    value={[this.convertIntoPriceFormat(stockData.yearly_low_price),this.convertIntoPriceFormat(stockData.yearly_high_price)]}
+                                /> 
                                 <Statistics type="number" name="3m Avg Vol('000)" value="1,236.56"/>
                             </div>
                             <div className="ks__slot">
-                                <Statistics type="number" name="Market Cap" value={this.props.snapdata.MarketCap}/>
+                                <Statistics type="number" name="Market Cap" value={this.convertIntoPriceFormat(this.props.snapdata.MarketCap)}/>
                                 <Statistics type="number" name="P/E" value={this.props.snapdata.PriceToEarnings}/>
                                 <Statistics type="number" name="Beta" value={this.props.snapdata.Beta}/>
                             </div>

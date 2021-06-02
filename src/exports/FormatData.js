@@ -3,6 +3,7 @@ import {MarketDataStructure} from './MessageStructure';
 export const readMarketData = (data,prevClose)=>
 {
 
+    // console.log(prevClose);
     let multiplier = getMultiplier(1)
     let response = {}
 
@@ -11,10 +12,14 @@ export const readMarketData = (data,prevClose)=>
         response[m.field] = convertIntoFormat(data,m.start,m.end,m.type,multiplier);
     });
 
+    // console.log(response);
+
     //add custom data made from fetched data
 
     //get changed price
-    let PC = prevClose == -1 ? response['close_price'] : prevClose;
+    // let PC = prevClose == -1 ? response['close_price'] : prevClose;
+    let PC = response['close_price'];
+
     let changed_amount = convertIntoNumber(response['last_traded_price'])-convertIntoNumber(PC);
     // console.log(prevClose,response['last_traded_price'],PC,changed_amount);
     // console.log(changed_amount);
@@ -27,20 +32,27 @@ export const readMarketData = (data,prevClose)=>
     response['change_price'] = convertIntoMoneyFormat(changed_amount);
     response['change_percentage'] = ((changed_amount/convertIntoNumber(PC))*100).toFixed(2)+'%';
 
-    // console.log(changed_amount,response['change_price'],response['change_percentage'])
+    // console.log(changed_amount,response['change_price'],response['change_percentage']);
+
+    let size = MarketDataStructure[MarketDataStructure.length - 1].end;
+
+    // console.log(size);
 
 
-    return response;
+    return {
+        livedata : response,
+        size : size
+    };
 
 }
 
 export const readMarketStatus = (data)=>{
-    let exchange_code = parseInt(buf2hex(data.slice(0,1),16));
-    let market_type_length = parseInt(buf2hex(data.slice(1,3),16))/100;
-    let market_type = buf2hex(data.slice(3,3+market_type_length),16);
-    let status_length = parseInt(buf2hex(data.slice(3+market_type_length,5+market_type_length),16));
-    let status = buf2hex(data.slice(5+market_type_length,5+market_type_length+status_length),16);
-    let timestamp = parseInt(buf2hex(data.slice(5+market_type_length+status_length,9+market_type_length+status_length),16));
+    let exchange_code = parseInt(buf2hex(data.slice(1,2),16));
+    let market_type_length = parseInt(buf2hex(data.slice(2,4),16))/100;
+    let market_type = buf2hex(data.slice(4,4+market_type_length),16);
+    let status_length = parseInt(buf2hex(data.slice(4+market_type_length,6+market_type_length),16));
+    let status = buf2hex(data.slice(6+market_type_length,6+market_type_length+status_length),16);
+    let timestamp = getTimeStamp(parseInt(buf2hex(data.slice(6+market_type_length+status_length,10+market_type_length+status_length),16)));
 
     console.log(exchange_code,market_type_length,market_type,status_length,status,timestamp);
 
@@ -50,10 +62,7 @@ function convertIntoFormat(data,a,b,type,multiplier)
 {
     if(type === 'p')
     {
-        return (parseInt(buf2hex(data.slice(a,b)),16)/multiplier).toLocaleString('en-IN',{
-            minimumFractionDigits: 2,
-            currency: 'INR'
-        });
+        return (parseInt(buf2hex(data.slice(a,b)),16)/multiplier);
     }
     else if(type === 't')
     {
@@ -61,15 +70,14 @@ function convertIntoFormat(data,a,b,type,multiplier)
     }
     else
     {
-        return (parseInt(buf2hex(data.slice(a,b)),16)).toLocaleString('en-IN',{
-            currency: 'INR'
-        });
+        return (parseInt(buf2hex(data.slice(a,b)),16));
     }
 }
 
 function convertIntoNumber(num)
 {
-    return parseFloat(num.replace(/,/g,''));
+    // return parseFloat(num.replace(/,/g,''));
+    return num
 }
 
 function convertIntoMoneyFormat(num) 

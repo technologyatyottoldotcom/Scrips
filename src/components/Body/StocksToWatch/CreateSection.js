@@ -71,12 +71,17 @@ export class CreateSection extends React.PureComponent {
                 {
                     convertedData = readMarketData(data,-1);
                 }
+
+                let livedata = convertedData.livedata
                 // console.log(convertedData.last_traded_price);
                 //get price change
 
-                this.setState({
-                    stockData : convertedData
-                })
+                if(response.data.size === convertedData.size)
+                {
+                    this.setState({
+                        stockData : livedata
+                    })
+                }
             }
         }
     }
@@ -116,6 +121,8 @@ export class CreateSection extends React.PureComponent {
     render() {
         
         let stockData = this.state.stockData;
+
+        // console.log(stockData);
 
         let change_price = parseFloat(stockData.change_price);
         let priceClass = change_price >= 0 ? 'positive' : 'negative';

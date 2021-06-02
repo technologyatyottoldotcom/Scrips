@@ -50,9 +50,6 @@ class TopStocks extends React.PureComponent {
 
     render() {
 
-		
-
-
         return (
             <div className="top__stocks container-fluid HomeTopChart__Scrollbar d-flex p-0">
                 {

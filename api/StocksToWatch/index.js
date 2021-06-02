@@ -9,7 +9,7 @@ function getStocks(req,res)
     let isin = req.params.isin;
 
 
-    conn.query('SELECT T1.name AS Name,T1.ISIN,T1.reuters_industry,T2.*,T3.* FROM stock_list_master_reuters_screener T1 JOIN NSE_500_stockList T2 JOIN master_security_list_NSE T3 ON T1.`ISIN` = T2.`ISIN Code` AND T1.reuters_industry="'+industry+'" AND T1.ISIN != "'+isin+'" AND T1.nse_code=T3.symbol',(error,result)=>{
+    conn.query('SELECT T1.name AS Name,T1.ISIN,T1.reuters_industry,T2.*,T3.* FROM stock_list_master_reuters_screener_original T1 JOIN NSE_500_stockList T2 JOIN master_security_list_NSE T3 ON T1.`ISIN` = T2.`ISIN Code` AND T1.reuters_industry="'+industry+'" AND T1.ISIN != "'+isin+'" AND T1.nse_code=T3.symbol',(error,result)=>{
             if(!error)
             {
                 if(result.length > 0)

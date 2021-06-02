@@ -7,7 +7,7 @@ function getStockFromISIN(req,res)
     let isin = req.params.isin;
     // console.log(isin);
 
-    conn.query(`SELECT T1.*,T2.company,T2.code,T2.symbol,T2.exchange,T2.trading_symbol AS filter FROM stock_list_master_reuters_screener as T1 
+    conn.query(`SELECT T1.*,T2.company,T2.code,T2.symbol,T2.exchange,T2.trading_symbol AS filter FROM stock_list_master_reuters_screener_original as T1 
     JOIN master_security_list_NSE as T2 
     ON T2.symbol = T1.nse_code AND T1.ISIN='${isin}'`,(error,result)=>{
         if(!error && result.length > 0)

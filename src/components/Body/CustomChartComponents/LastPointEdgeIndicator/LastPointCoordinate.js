@@ -4,6 +4,8 @@ import { isDefined} from "react-stockcharts/lib/utils";
 
 /* eslint-disable react/prop-types */
 export function renderSVG(props) {
+
+    // console.log('Render Svg');
 	const { className } = props;
 
 	const edge = helper(props);
@@ -14,8 +16,6 @@ export function renderSVG(props) {
     {
         circle = <g>
             <circle className="pulse-disk" cx={edge.circle.x} cy={edge.circle.y} r={edge.circle.radius} fill={edge.circle.fill}/>
-            {/* <circle className="pulse-circle-1" cx={edge.circle.x} cy={edge.circle.y} strokeWidth="2" fill={edge.circle.fill}/>
-            <circle className="pulse-circle-2" cx={edge.circle.x} cy={edge.circle.y}  strokeWidth="2" fill={edge.circle.fill}/> */}
         </g>
     }
 

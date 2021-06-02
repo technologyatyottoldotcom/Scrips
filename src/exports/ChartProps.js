@@ -73,9 +73,33 @@ const getYAxisProps = ()=>
     }
 }
 
+const tooltipContent = (range)=>{
+
+    let nf = format(".2f");
+    let df = timeFormat("%d %b '%y  %H:%M");
+    if(range === '1Y' || range === '5Y' || range === 'MAX')
+    {
+        df = timeFormat("%d %b %Y")
+    }
+    return ({ currentItem, xAccessor }) => {
+        return {
+            x: df(xAccessor(currentItem)),
+            y: [
+                {
+                    label: "open",
+                    value: currentItem.open && nf(currentItem.open)
+                }
+            ]
+                
+            .filter(line => line.value)
+        };
+    };
+}
+
 export {
     getXCoordinateProps,
     getYCoordinateProps,
     getXAxisProps,
-    getYAxisProps
+    getYAxisProps,
+    tooltipContent
 }

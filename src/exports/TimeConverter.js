@@ -2,7 +2,7 @@ const moment = require('moment');
 
 export function convertToUNIX(range)
 {
-    console.log(range);
+    // console.log(range);
     let curr = moment();
     switch(range){
         case 'D' : 
@@ -28,5 +28,14 @@ export function convertToUNIX(range)
         default : 
             return curr.subtract(1,'year').startOf('year').clone().unix();
     }   
+}
+
+
+export function dateToUNIX(date)
+{
+    if(date)
+    {
+        return moment(date).add(1,'minute').clone().unix();
+    }
 }
 
