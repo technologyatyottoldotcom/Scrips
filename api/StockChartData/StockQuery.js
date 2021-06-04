@@ -43,16 +43,8 @@ function getQuery(options)
                     query+='SELECT t.* FROM (';
                     tableYears.forEach((year,index) => {
 
-                        if(type === 'MAX')
-                        {
-                            query+=`SELECT TIMESTAMP AS DATE , OPEN AS OPEN , HIGH AS HIGH , LOW AS LOW , CLOSE AS CLOSE , TOTTRDQTY AS VOLUME FROM ${preWord}${year} WHERE SYMBOL='${code}' GROUP BY MONTH(DATE)
-                            `;
-                        }
-                        else
-                        {
-                            query+=`SELECT TIMESTAMP AS DATE , OPEN AS OPEN , HIGH AS HIGH , LOW AS LOW , CLOSE AS CLOSE , TOTTRDQTY AS VOLUME FROM ${preWord}${year} WHERE SYMBOL='${code}'
-                        `;
-                        }
+                        
+                        query+=`SELECT TIMESTAMP AS DATE , OPEN AS OPEN , HIGH AS HIGH , LOW AS LOW , CLOSE AS CLOSE , TOTTRDQTY AS VOLUME FROM ${preWord}${year} WHERE SYMBOL='${code}'`;
                         
                         if(index !== tableYears.length - 1)
                         {
@@ -60,47 +52,31 @@ function getQuery(options)
                         }
                     });
 
-                    query+=` ) t WHERE t.DATE < FROM_UNIXTIME(${time})`;
+                    query+=` ) t`;
                     
                 }
                 else if(exchange === 'BSE')
                 {
                     query+='SELECT t.* FROM (';
                     tableYears.forEach((year,index) => {
-                        if(type === 'MAX')
-                        {
-                            query+=`SELECT TRADING_DATE AS DATE , OPEN AS OPEN , HIGH AS HIGH , LOW AS LOW , CLOSE AS CLOSE , NO_TRADES AS VOLUME FROM ${preWord}${year} WHERE SC_CODE='${code}' GROUP BY MONTH(DATE) `;
-                        }
-                        else
-                        {
-                            query+=`SELECT TRADING_DATE AS DATE , OPEN AS OPEN , HIGH AS HIGH , LOW AS LOW , CLOSE AS CLOSE , NO_TRADES AS VOLUME FROM ${preWord}${year} WHERE SC_CODE='${code}'`;
-                        }
+                        query+=`SELECT TRADING_DATE AS DATE , OPEN AS OPEN , HIGH AS HIGH , LOW AS LOW , CLOSE AS CLOSE , NO_TRADES AS VOLUME FROM ${preWord}${year} WHERE SC_CODE='${code}'`;
+                        
                         if(index !== tableYears.length - 1)
                         {
                             query+= ' UNION ';
                         }
                     });
 
-                    query+=` ) t WHERE t.DATE < FROM_UNIXTIME(${time})`;
+                    query+=` ) t`;
+
                 }
                 else
                 {
                     query = false;
                 }
-
-                let skip;
-                if(type === '5Y')
-                {
-                    skip = 5;
-                }
-                else
-                {
-                    skip = 1;
-                }
                 
                 resolve({
-                    query : query,
-                    skip : skip
+                    query : query
                 });
 
             }

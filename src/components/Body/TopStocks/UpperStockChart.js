@@ -75,7 +75,7 @@ export class UpperStockChart extends React.PureComponent {
                 displayXAccessor={displayxAccessorVal}
 				xScale={xScaleVal}
 				xExtents={xExtents}
-                disableInteraction={false}
+                disableInteraction={true}
                 useCrossHairStyleCursor={false}
 			>
 				<Chart 
@@ -87,11 +87,11 @@ export class UpperStockChart extends React.PureComponent {
 					<LineSeries 
                         yAccessor={d => d.open} 
                         strokeWidth={1} 
-                        stroke={this.props.status === 'positive' ? "#00b894" : "#e51a4b"} 
+                        stroke={this.props.status === 'positive' ? "#19E683" : "#e51a4b"} 
                         interpolation={curveCardinal}
                     />
                     {/* <LastPointIndicator yAccessor={d => d.open} displayFormat={format(".4s")} radius={3} fill={this.props.status === 'positive' ? "#00b894" : "#e51a4b"}/> */}
-                    <StraightLine strokeDasharray="ShortDash" strokeWidth={1} stroke={this.props.status === 'positive' ? "#00b894" : "#e51a4b"} opacity={1} yValue={openPrice}/>
+                    <StraightLine strokeDasharray="ShortDash" strokeWidth={1} stroke={this.props.status === 'positive' ? "#19E683" : "#e51a4b"} opacity={1} yValue={openPrice}/>
 
                 </Chart>
 			</ChartCanvas>

@@ -6,7 +6,7 @@ import { renderSVG } from "./LastPointCoordinate";
 import GenericChartComponent from "react-stockcharts/lib/GenericChartComponent";
 import { getAxisCanvas } from "react-stockcharts/lib/GenericComponent";
 
-import { first, last, isDefined, functor, noop, strokeDashTypes } from "react-stockcharts/lib/utils";
+import { first, last, isDefined, functor, noop } from "react-stockcharts/lib/utils";
 
 class EdgeIndicator extends Component {
 	constructor(props) {

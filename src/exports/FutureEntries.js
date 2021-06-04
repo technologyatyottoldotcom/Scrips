@@ -1,4 +1,5 @@
 const moment = require('moment');
+const {convertToUNIX} = require('./TimeConverter');
 
 
 //please don't specify date in DD-MM-YYYY format for all months
@@ -398,33 +399,33 @@ export function getFuturePoints(lastPoint,range)
             return points;
         
         case '3M' : 
-            futureDaysArr = getNextDays(10);
+            futureDaysArr = getNextDays(30);
             // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,60);
             // console.log(points);
             return points;
         
         case '6M' : 
-            futureDaysArr = getNextDays(10);
+            futureDaysArr = getNextDays(60);
             // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,120);
             // console.log(points);
             return points;
         
         case 'YTD' : 
-            futureDaysArr = getNextDays(60,false);
+            futureDaysArr = getNextDays(150,false);
             // console.log(futureDaysArr);
             points = generatePointsDays(futureDaysArr);
             return points;
         
         case '1Y' : 
-            futureDaysArr = getNextMonths(12,false);
+            futureDaysArr = getNextDays(180,false);
             // console.log(futureDaysArr);
             points = generatePointsDays(futureDaysArr);
             return points;
         
         case '5Y' : 
-            futureDaysArr = getNextMonths(24,false);
+            futureDaysArr = getNextDays(180,false);
             // console.log(futureDaysArr);
             points = generatePointsDays(futureDaysArr);
             return points;
@@ -759,6 +760,46 @@ export function getStartPointIndex(data,range,lastPoint,firstPoint)
     {
         return data.length - 120;
     }
+}
+
+export function filterBigData(data,range)
+{
+
+    let filteredData = [];
+    let startUNIX = convertToUNIX(range);
+    console.log(data.length,startUNIX,typeof data);
+    if(range === '1Y')
+    {
+        filteredData = data.filter((d)=>{
+            return moment(d.date).clone().unix() > startUNIX
+        });
+    }
+    else if(range === '5Y')
+    {
+        filteredData = data.filter((d,i)=>{
+            return moment(d.date).clone().unix() > startUNIX && i%5 === 0
+        });
+    }
+    else
+    {
+        let start = data ? data[0] : null;
+        if(start)
+        {
+            let m = moment(start.date).get('month');
+            filteredData.push(start);
+
+            data.forEach((d)=>{
+                if(moment(d.date).get('month') !== m)
+                {
+                    filteredData.push(d);
+                    m = moment(d.date).get('month');
+                }
+            })
+        }        
+    }
+
+    console.log(filteredData.length);
+    return filteredData;
 }
 
 

@@ -41,7 +41,7 @@ function getData(options)
                         type : options.type
                     }).then((data)=>{
                         let query = data.query;
-                        let skip = data.skip;
+                        skip = 1;
                         // console.log(query);
                         // console.log(skip);
                         if(query)
@@ -50,11 +50,12 @@ function getData(options)
                                 if(!err)
                                 {
                                     // console.log(result);
-                                    let dbArrayTemp = result.map(obj => Object.values(obj));
+                                    let dbArray = result.map(obj => Object.values(obj));
                                     // console.log('db Array Temp : ',dbArrayTemp.length);
 
-                                    let dbArray = dbArrayTemp.filter((a,i)=> i%skip === 0)
-                                    // console.log('db Array : ',dbArray.length);
+                                    // console.log('db Array Temp : ',dbArrayTemp.length);
+
+                                    // console.log('db Array : ',dbArray.length,typeof dbArray);
                                     stockArray = stockArray.concat(dbArray);
                                     stockArray = stockArray.concat(apiArray);
                                     // console.log('length : ',stockArray.length);
@@ -66,6 +67,7 @@ function getData(options)
                                 }
                                 else
                                 {
+                                    console.log(err);
                                     reject({
                                         error : err
                                     })

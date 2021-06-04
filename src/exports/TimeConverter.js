@@ -20,9 +20,9 @@ export function convertToUNIX(range)
         case 'YTD' : 
             return curr.subtract(1,'year').startOf('year').clone().unix();
         case '1Y' : 
-            return curr.subtract(15,'days').clone().unix();
+            return curr.subtract(3,'years').startOf('year').clone().unix();
         case '5Y' : 
-            return curr.subtract(15,'days').clone().unix();
+            return curr.subtract(10,'years').startOf('year').clone().unix();
         case 'MAX' : 
             return curr.clone().unix();
         default : 

@@ -15,7 +15,7 @@ import {lastValidVisibleItemBasedZoomAnchor} from './CustomChartComponents/ZoomB
 import { timeFormat } from 'd3-time-format';
 import { TrendLine,EquidistantChannel,StandardDeviationChannel ,FibonacciRetracement ,GannFan} from "react-stockcharts/lib/interactive";
 import {saveInteractiveNodes, getInteractiveNodes} from "../../exports/InteractiveUtils";
-import { HoverTooltip } from "react-stockcharts/lib/tooltip";
+import { HoverTooltip } from "./CustomChartComponents/HoverTooltip/HoverTooltip";
 import {getXCoordinateProps, getYCoordinateProps, getXAxisProps, getYAxisProps , tooltipContent } from '../../exports/ChartProps';
 import { CrossHairCursor, MouseCoordinateX, MouseCoordinateY ,PriceCoordinate, EdgeIndicator  } from "react-stockcharts/lib/coordinates";
 import {sma20,wma20,ema20,tma20,bb,macdCalculator,rsiCalculator,atrCalculator,slowSTO,fastSTO,fullSTO,fi,fiEMA,elder,elderImpulseCalculator,defaultSar,changeCalculator,compareCalculator} from '../../exports/MathematicalIndicators';
@@ -24,6 +24,8 @@ import { head } from "react-stockcharts/lib/utils";
 import LastPointIndicator from './CustomChartComponents/LastPointEdgeIndicator/LastPointIndicator';
 import PriceMarkerCoordinate from './CustomChartComponents/PriceMarker/PriceMarkerCoordinate';
 import LabelEdgeCoordinate from './CustomChartComponents/EdgeLabel/LabelEdgeCoordinate';
+import ChartInteraction from './CustomChartComponents/ChartInteraction/ChartInteraction';
+
 
 export class StockChart extends React.PureComponent {
 
@@ -39,8 +41,12 @@ export class StockChart extends React.PureComponent {
         this.onDrawCompleteChart = this.onDrawCompleteChart.bind(this);
         this.updateChart = this.updateChart.bind(this);
         this.updateHead = this.updateHead.bind(this);
+        this.setInteractionType = this.setInteractionType.bind(this);
+        this.setupChart = this.setupChart.bind(this);
 
         this.state = {
+            isInteracted : false,
+            chartConfig : null,
             apidata : this.props.chartProps.chartdata,
             extradata : this.props.chartProps.extradata,
             chartdata : null,
@@ -63,19 +69,102 @@ export class StockChart extends React.PureComponent {
     }
     
     componentDidMount() {
-        document.addEventListener("keyup", this.onKeyPress); 
+        console.log('Stock Chart Mounted...');
+        document.addEventListener("keyup", this.onKeyPress);
+        this.setupChart(); 
     }
 
     componentDidUpdate(prevProps)
     {
-        this.updateHead();
-        this.updateChart();
+        if(this.props.currentPrice !== prevProps.currentPrice)
+        {
+            console.log('update head');
+            this.updateHead();
+        }
+        // this.updateChart();
     }
     
-    componentWillUnmount() {
-		document.removeEventListener("keyup", this.onKeyPress);
-    }
+    // componentWillUnmount() {
+	// 	document.removeEventListener("keyup", this.onKeyPress);
+    // }
 
+    setupChart()
+    {
+        const {type,width,height,ratio,range,zoom,chartType,TotalCharts,IndicatorChartTypeArray,trendLineType} = this.props;
+
+        // console.log(this.props);
+        let chartdata = this.props.chartProps.chartdata;
+        // console.log(extradata);
+        let dataVal;
+        let xAccessorVal;
+        let xScaleVal;
+        let displayxAccessorVal;
+        let calculatedData;
+        let chartSeries;
+        let start,end,xExtents;
+        let lastPoint;
+        let IndicatorsArray = [];
+    
+        // chartdata = chartdata.concat(extradata);
+        lastPoint = this.state.apidata[this.state.apidata.length - 1];
+        chartdata = this.state.apidata.concat(this.state.extradata);
+
+        // xAccessorVal = d => d.date;
+        // xScaleVal = scaleTime();
+        // displayxAccessorVal = d => d.date;        
+
+        [calculatedData,chartSeries] = this.getChartType(chartType,chartdata);
+        IndicatorChartTypeArray.map((i,index)=>{
+            IndicatorsArray.push(this.getIndicatorData(i,chartdata));
+        });
+
+        // console.log(IndicatorsArray);
+
+        const xScaleProvider = discontinuousTimeScaleProvider
+            .inputDateAccessor(d => d.date);
+            const {
+                data,
+                xScale,
+                xAccessor,
+                displayXAccessor,
+            } = xScaleProvider(calculatedData);
+
+        dataVal = data;
+        xAccessorVal = xAccessor;
+        xScaleVal = xScale;
+        displayxAccessorVal = displayXAccessor;
+
+
+        let buffer = this.getDisplayBuffer(this.props.chartProps.range);
+
+
+        start = xAccessorVal(dataVal[Math.min(this.props.chartProps.startIndex,dataVal.length-1)]);
+        end = xAccessorVal(dataVal[Math.max(dataVal.length - (this.props.chartProps.extraPoints) + buffer,0)]);
+        // console.log(dataVal[start],dataVal[end]);
+        xExtents = [start,end];
+
+        console.log(xExtents);
+
+        // let openPrice = parseFloat(this.props.openPrice.replace(',',''));
+        // let closePrice = parseFloat(this.props.closePrice.replace(',',''));
+        let closePrice = parseFloat(this.props.closePrice);
+
+        this.setState({
+            chartConfig : {
+                chartdata : chartdata,
+                lastPoint : lastPoint,
+                IndicatorsArray : IndicatorsArray,
+                closePrice : closePrice,
+                chartSeries : chartSeries,
+                dataVal : dataVal,
+                xAccessorVal : xAccessorVal,
+                xScaleVal : xScaleVal,
+                displayxAccessorVal : displayxAccessorVal,
+                xExtents : xExtents
+            }
+        })
+
+    }
 
     updateChart()
     {
@@ -489,15 +578,27 @@ export class StockChart extends React.PureComponent {
         }
     }
 
-    getYExtents(high,low,lastPoint)
+    getYExtents(zoom,high,low,lastPoint)
     {
-        if(high && low)
+
+        let h,l;
+        if(zoom)
         {
-            return [high+(high*(1/100)),low-(low*(0.1/100))];
+            h = 1.5;
+            l = 0.1
         }
         else
         {
-            return [lastPoint.high+(lastPoint.high*(1/100)),lastPoint.low-(lastPoint.low*(0.1/100))];
+            h = 0.5;
+            l = 0.1;
+        }
+        if(high && low)
+        {
+            return [high+(high*(h/100)),low-(low*(l/100))];
+        }
+        else
+        {
+            return [lastPoint.high+(lastPoint.high*(h/100)),lastPoint.low-(lastPoint.low*(l/100))];
         }
     }
 
@@ -510,23 +611,23 @@ export class StockChart extends React.PureComponent {
         }
         else if(range === '1D')
         {
-            buffer = 30;
+            buffer = 60;
         }
         else if(range === '5D')
         {
-            buffer = 30;
+            buffer = 80;
         }
         else if(range === '1M')
         {
-            buffer = 30;
+            buffer = 60;
         }
         else if(range === '3M')
         {
-            buffer = 30;
+            buffer = 90;
         }
         else if(range === '6M')
         {
-            buffer = 30;
+            buffer = 90;
         }
         else if(range === 'YTD')
         {
@@ -534,15 +635,15 @@ export class StockChart extends React.PureComponent {
         }
         else if(range === '1Y')
         {
-            buffer = 3;
+            buffer = 60;
         }
         else if(range === '5Y')
         {
-            buffer = 12;
+            buffer = 60;
         }
         else if(range === 'MAX')
         {
-            buffer = 30;
+            buffer = 40;
         }
         else
         {
@@ -553,10 +654,48 @@ export class StockChart extends React.PureComponent {
         
     }
 
+    setInteractionType(type)
+    {
+        // console.log(type);
+        let startDate = type.itemFirst.date;
+        let endDate = type.itemLast.date;
+
+        let xAccessorVal = this.state.chartConfig.xAccessorVal;
+        let dataVal = this.state.chartConfig.dataVal;
+
+        let buffer = this.getDisplayBuffer(this.props.chartProps.range);
+
+        let startIndx = dataVal.findIndex((d)=>{
+            return d.date === startDate;
+        });
+
+        let endIndx = dataVal.findIndex((d)=>{
+            return d.date === endDate;
+        });
+
+        console.log(startIndx,endIndx);
+
+        let start = xAccessorVal(dataVal[Math.min(startIndx,dataVal.length-1)]);
+        let end = xAccessorVal(dataVal[Math.max(dataVal.length - (endIndx) + buffer,0)]);
+        // console.log(dataVal[start],dataVal[end]);
+        let xExtents = [start,end];
+
+        console.log(start,end);
+
+        if(this.state.chartConfig.xExtents !== xExtents)
+        {
+            // this.setState({
+            //     chartConfig : {
+            //         xExtents : xExtents
+            //     }
+            // })
+        }
+       
+    }
 
     render() {
 
-        if(this.state.apidata && this.state.extradata)
+        if(this.state.apidata && this.state.extradata && this.state.chartConfig)
         {
             // console.log('Rendering StockChart....');
             // console.log(this.state.chartProps.lastPoint);c
@@ -564,26 +703,6 @@ export class StockChart extends React.PureComponent {
 
             const {type,width,height,ratio,range,zoom,chartType,TotalCharts,IndicatorChartTypeArray,trendLineType} = this.props;
 
-            // console.log(this.props);
-            let chartdata = this.props.chartProps.chartdata;
-            let extradata = this.props.chartProps.extradata;
-            // console.log(extradata);
-            let dataVal;
-            let xAccessorVal;
-            let xScaleVal;
-            let displayxAccessorVal;
-            let calculatedData;
-            let chartSeries;
-            let start,end,xExtents;
-            let lastPoint;
-            let IndicatorsArray = [];
-
-            let canvasProps = {
-
-            }
-
-
-            // console.log(height,width);
 
             let margin;
 
@@ -593,72 +712,18 @@ export class StockChart extends React.PureComponent {
             }
             else
             {
-                margin = {left: 0, right: 0, top:0, bottom: 20};
+                margin = {left: 0, right: 0, top: 30, bottom: 20};
             }
             var gridHeight = height - margin.top - margin.bottom;
             var gridWidth = width - margin.left - margin.right;
 
             const showGrid = true;
 
-            // const gridProps = {
-            //     tickStrokeDasharray: 'Solid',
-            //     tickStrokeOpacity: 0.05,
-            //     tickStrokeWidth: 1 ,
-            //     tickStroke : '#404040',
-            //     innerTickSize: -1 * gridWidth
-            // }
-
             const gridProps = {
                 
             }
 
-        
-            // chartdata = chartdata.concat(extradata);
-            lastPoint = this.state.apidata[this.state.apidata.length - 1];
-            chartdata = this.state.apidata.concat(this.state.extradata);
-
-            // xAccessorVal = d => d.date;
-            // xScaleVal = scaleTime();
-            // displayxAccessorVal = d => d.date;        
-
-            [calculatedData,chartSeries] = this.getChartType(chartType,chartdata);
-            IndicatorChartTypeArray.map((i,index)=>{
-                IndicatorsArray.push(this.getIndicatorData(i,chartdata));
-            });
-
-            // console.log(IndicatorsArray);
-
-            const xScaleProvider = discontinuousTimeScaleProvider
-                .inputDateAccessor(d => d.date);
-                const {
-                    data,
-                    xScale,
-                    xAccessor,
-                    displayXAccessor,
-                } = xScaleProvider(calculatedData);
-
-            dataVal = data;
-            xAccessorVal = xAccessor;
-            xScaleVal = xScale;
-            displayxAccessorVal = displayXAccessor;
-
-
-            let buffer = this.getDisplayBuffer(this.props.chartProps.range);
-
-
-            start = xAccessorVal(dataVal[Math.min(this.props.chartProps.startIndex,dataVal.length-1)]);
-            end = xAccessorVal(dataVal[Math.max(dataVal.length - (this.props.chartProps.extraPoints) + buffer,0)]);
-            // console.log(dataVal[start],dataVal[end]);
-            xExtents = [start,end];
-
-            canvasProps = {
-                xExtents : xExtents
-            }
-
-            // let openPrice = parseFloat(this.props.openPrice.replace(',',''));
-            // let closePrice = parseFloat(this.props.closePrice.replace(',',''));
-            let closePrice = parseFloat(this.props.closePrice);
-
+            // console.log(this.state.chartConfig)
 
             return (
                 <div>
@@ -670,12 +735,12 @@ export class StockChart extends React.PureComponent {
                         margin = {margin}
                         seriesName="IBM"
                         postCalculator={compareCalculator}
-                        xScale={xScaleVal}
-                        xAccessor={xAccessorVal}
-                        displayXAccessor={displayxAccessorVal}
-                        data={dataVal}
+                        xScale={this.state.chartConfig.xScaleVal}
+                        xAccessor={this.state.chartConfig.xAccessorVal}
+                        displayXAccessor={this.state.chartConfig.displayxAccessorVal}
+                        data={this.state.chartConfig.dataVal}
                         type={type}
-                        {...canvasProps}
+                        xExtents={this.state.chartConfig.xExtents}
                         zoomAnchor={lastValidVisibleItemBasedZoomAnchor} 
                     >
 
@@ -683,10 +748,13 @@ export class StockChart extends React.PureComponent {
                     <Chart 
                         id={1} 
                         padding={30}
-                        yExtents={d=> this.getYExtents(d.high,d.low,lastPoint)} 
+                        yExtents={d=> this.getYExtents(zoom,d.high,d.low,this.state.chartConfig.lastPoint)} 
                         height={this.getChartHeight(height,zoom,TotalCharts)}>
 
-                        {chartSeries}
+                        {this.state.chartConfig.chartSeries}
+
+                        <ChartInteraction yAccessor={d => d.open} setInteractionType={this.setInteractionType}/>
+
                         
                         {!zoom && <>
                             <EdgeIndicator 
@@ -707,16 +775,16 @@ export class StockChart extends React.PureComponent {
 
                         {zoom && <>
 
-                            <YAxis {...getYAxisProps()} {...gridProps}/>
+                            <YAxis {...getYAxisProps()} {...this.state.chartConfig.gridProps}/>
 
                             {TotalCharts === 1 ? 
                                 <>
-                                    <XAxis {...getXAxisProps()} {...gridProps}/>
+                                    <XAxis {...getXAxisProps()} {...this.state.chartConfig.gridProps}/>
                                     <MouseCoordinateX {...getXCoordinateProps(range)}/>
                                     <LabelEdgeCoordinate 
                                         at="right"
                                         orient="left"
-                                        price={lastPoint.open}
+                                        price={this.state.chartConfig.lastPoint.open}
                                         displayFormat={format('.2f')}
                                         labelText={this.props.stockDetails.stockNSECode}
                                         fill="#00a0e3"
@@ -732,7 +800,7 @@ export class StockChart extends React.PureComponent {
                                     <PriceCoordinate 
                                         at="right"
                                         orient="right"
-                                        price={lastPoint.open}
+                                        price={this.state.chartConfig.lastPoint.open}
                                         displayFormat={format('.2f')}
                                         fill="#00a0e3"
                                         rectHeight={18}
@@ -758,7 +826,7 @@ export class StockChart extends React.PureComponent {
                             
                                 </> :
                                 <>
-                                    <XAxis {...getXAxisProps()} {...gridProps}/>
+                                    <XAxis {...getXAxisProps()} {...this.state.chartConfig.gridProps}/>
                                 </>
                             }
 
@@ -768,13 +836,14 @@ export class StockChart extends React.PureComponent {
                         <PriceMarkerCoordinate 
                             at="left"
                             orient="right"
-                            price={closePrice}
+                            price={this.state.chartConfig.closePrice}
                             displayFormat={format('.2f')}
                             strokeDasharray="ShortDot"
                             dx={20} 
-                            fill="#8E8E8E"
-                            rectWidth={70}
-                            rectHeight={20}   
+                            fill="#4E4E4E"
+                            rectWidth={55}
+                            rectHeight={20} 
+                            fontSize={10}  
                         />
 
                         <HoverTooltip
@@ -784,6 +853,7 @@ export class StockChart extends React.PureComponent {
                             fill='#ffffff'
                             opacity={1}
                             stroke='none'
+                            isLabled={false}
                         />
                         
                         
@@ -863,14 +933,14 @@ export class StockChart extends React.PureComponent {
                     </Chart>
 
                     {zoom && 
-                        IndicatorsArray.map((i,index) => {
+                        this.state.chartConfig.IndicatorsArray.map((i,index) => {
                             let series = i[1];
                             let yExtents = i[2];
                             let chartHeight = this.getChartHeight(height,zoom,TotalCharts);
                             let originHeight = (chartHeight*(index+1)) + (index+1)*10;
                             console.log(chartHeight,originHeight);
                             return <Chart class="my__chart" id={(index+2)} yExtents={yExtents} height={chartHeight} origin={(w,h)=>[0,originHeight]}>
-                                {index === (IndicatorsArray.length-1) ? 
+                                {index === (this.state.chartConfig.IndicatorsArray.length-1) ? 
                                     <>
                                         <XAxis axisAt="bottom" orient="bottom" ticks={5} tickStroke='#888888' stroke='#c8c8c8' fontWeight={600} fontFamily="Open Sans, sans-serif" fontSize={10}/>
                                         <MouseCoordinateX at="bottom" orient="bottom" displayFormat={timeFormat("%d %b '%y")} fontFamily="Open Sans, sans-serif" fontSize={12}/>

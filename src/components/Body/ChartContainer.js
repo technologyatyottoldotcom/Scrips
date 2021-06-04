@@ -461,6 +461,8 @@ export class ChartContainer extends React.PureComponent {
         // console.log(typeof change_price,typeof change_percentage);
 
         let priceClass = change_price >= 0 ? 'positive' : 'negative';
+
+        let stockName = this.props.stockDetails.stockExchange.exchange === 'NSE' ? this.props.stockDetails.stockNSECode : this.props.stockDetails.stockBSECode; 
         
         // console.log(this.props.isLoaded)
         if(this.props.isLoaded)
@@ -602,7 +604,7 @@ export class ChartContainer extends React.PureComponent {
                         <div className="stock__info">
                             <div className="stock__details">
                                 <p className="stock__name__code">
-                                    <span id="stock__code">{this.props.stockDetails.stockSymbol}</span>
+                                    <span id="stock__code">{stockName}</span>
                                 </p>
                                 <div className="stock__type">
                                     <img src={SettingIcon} alt="s"/>
@@ -636,34 +638,35 @@ export class ChartContainer extends React.PureComponent {
                                     </div>
                                     
                                 </div>
-                            </div>
-                            <div className="stock__price__change">
+                                <div className="stock__price__change">
                             
-                                <div className={priceClass +' stock__performance__amount'} style={{display : 'flex'}}>
-                                    {stockData.change_price &&
-                                        stockData.change_price.split('').map((n,i) => {
-                                            return <AnimatedDigit 
-                                            digit={n} 
-                                            size={18} 
-                                            key={i}    
-                                            digitMargin={-0.8}
-                                        />
-                                    })}
+                                    <div className={priceClass +' stock__performance__amount'} style={{display : 'flex'}}>
+                                        {stockData.change_price &&
+                                            stockData.change_price.split('').map((n,i) => {
+                                                return <AnimatedDigit 
+                                                digit={n} 
+                                                size={18} 
+                                                key={i}    
+                                                digitMargin={-0.8}
+                                            />
+                                        })}
+                                    </div>
+                                    <div className={priceClass +' stock__performance__percentage'} style={{display : 'flex'}}>
+                                        ({stockData.change_percentage &&
+                                            stockData.change_percentage.split('').map((n,i) => {
+                                                return <AnimatedDigit 
+                                                digit={n} 
+                                                size={18} 
+                                                key={i}
+                                                digitMargin={-0.8}
+                                            />
+                                        })})
+                                    </div>
+                                    
+                                    {/* <ChartClock /> */}
                                 </div>
-                                <div className={priceClass +' stock__performance__percentage'} style={{display : 'flex'}}>
-                                    ({stockData.change_percentage &&
-                                        stockData.change_percentage.split('').map((n,i) => {
-                                            return <AnimatedDigit 
-                                            digit={n} 
-                                            size={18} 
-                                            key={i}
-                                            digitMargin={-0.8}
-                                        />
-                                    })})
-                                </div>
-                                
-                                {/* <ChartClock /> */}
                             </div>
+                            
                         </div>
                         <div className="stock__purchase">
                             <div className="buy__stock"><img src={PlusIcon} alt=""/></div>
@@ -675,7 +678,8 @@ export class ChartContainer extends React.PureComponent {
                                     key={1} 
                                     openPrice={this.props.stockData.open_price}
                                     closePrice={this.props.stockData.close_price}
-                                    currentPrice={this.props.stockData.last_traded_price}
+                                    currentPrice={0}
+                                    // currentPrice={this.props.stockData.last_traded_price}
                                     initial={this.props.initial}
                                     // stockData={this.props.stockData}
                                     range={this.state.range} 

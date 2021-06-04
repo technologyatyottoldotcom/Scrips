@@ -71,6 +71,7 @@ export function renderSVG(props) {
 				y={edge.coordinate.edgeYText}
 				textAnchor={edge.coordinate.textAnchor}
 				fontFamily={edge.coordinate.fontFamily}
+				fontWeight={600}
 				fontSize={edge.coordinate.fontSize}
 				dy=".32em"
 				fill={edge.coordinate.textFill}

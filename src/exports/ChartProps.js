@@ -91,7 +91,6 @@ const tooltipContent = (range)=>{
                 }
             ]
                 
-            .filter(line => line.value)
         };
     };
 }

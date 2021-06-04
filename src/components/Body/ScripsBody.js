@@ -16,7 +16,7 @@ import Exit from './MenuSection/Exit';
 import { BusinessNews } from './BusinessNews/BusinessNews';
 import {readMarketData,readMarketStatus} from '../../exports/FormatData';
 import {getCandleDuration} from '../../exports/MessageStructure';
-import {getFuturePoints,getStartPointIndex} from '../../exports/FutureEntries';
+import {getFuturePoints,getStartPointIndex,filterBigData} from '../../exports/FutureEntries';
 import {convertToUNIX,dateToUNIX} from '../../exports/TimeConverter';
 import '../../css/BusinessNews.css';
 import '../../css/MenuSection.css';
@@ -465,6 +465,8 @@ class ScripsBody extends React.PureComponent
                 this.setState({
                     bigdataLoaded : true,
                     bigchartdata : tempDataArray
+                },()=>{
+                    console.log('big data loaded ',tempDataArray.length)
                 })
             }
 
@@ -482,18 +484,19 @@ class ScripsBody extends React.PureComponent
         {
             clearInterval(bigdatainterval);
             let tempDataArray = this.state.bigchartdata;
+            let filteredData = filterBigData(tempDataArray,type);
             console.log('big data loaded ');
-            console.log(tempDataArray.length);
-            let lastPoint = tempDataArray[tempDataArray.length - 1];
-            let firstPoint = tempDataArray[0];
-            let startIndex = getStartPointIndex(tempDataArray,type,lastPoint,firstPoint);
+            console.log(filteredData.length);
+            let lastPoint = filteredData[filteredData.length - 1];
+            let firstPoint = filteredData[0];
+            let startIndex = getStartPointIndex(filteredData,type,lastPoint,firstPoint);
             let futurePoints = getFuturePoints(lastPoint,type);
             this.setState({
-                chartdata : tempDataArray,
+                chartdata : filteredData,
                 isLoaded : true,
                 dataLoaded : true,
                 chartProps : {
-                    chartdata : tempDataArray,
+                    chartdata : filteredData,
                     extradata : futurePoints,
                     lastPoint : lastPoint,
                     startIndex : startIndex,
@@ -588,7 +591,6 @@ class ScripsBody extends React.PureComponent
         
     }
     
-
     render()
     {
         // console.log('Rendering ScripsBody ...');
