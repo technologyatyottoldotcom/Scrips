@@ -4,6 +4,7 @@ import Axios from 'axios';
 import UpperStockChart from './UpperStockChart';
 import AnimatedDigit from '../AnimatedDigit';
 import {readMarketData} from '../../../exports/FormatData';
+import {getEndOfDayMinutes} from '../../../exports/FutureEntries';
 import Spinner from '../../Loader/Spinner';
 
 const REQUEST_BASE_URL = 'localhost';
@@ -17,7 +18,8 @@ export class UpperStock extends React.PureComponent {
         this.setInitialSize = this.setInitialSize.bind(this);
         this.state = {
             isLoading : true,
-            data : null,
+            apidata : null,
+            extradata : null,
             chartWidth : 0,
             chartHeight : 0,
             stockData : '',
@@ -70,11 +72,17 @@ export class UpperStock extends React.PureComponent {
                 }
 
                     tempDataArray.push(dobj);
-                });
+            });
+
+            // console.log(tempDataArray[tempDataArray.length-1])
+            let lastPoint = tempDataArray[tempDataArray.length-1];
+
+            let futuredata = getEndOfDayMinutes(lastPoint);
 
             this.setState({
                 isLoading : false,
-                data : tempDataArray
+                apidata : tempDataArray,
+                extradata : futuredata
             },()=>{
                 this.updateIndexData();
             });
@@ -102,12 +110,18 @@ export class UpperStock extends React.PureComponent {
                         close : parseFloat(d['CLOSE']),
                         volume : parseInt(d['VOLUME'])
                     }
+                    tempDataArray.push(dobj);
+                });
 
-                        tempDataArray.push(dobj);
-                    });
+                console.log(tempDataArray.length);
 
+                let lastPoint = tempDataArray[tempDataArray.length-1];
+
+                let futuredata = getEndOfDayMinutes(lastPoint);
+                
                 this.setState({
-                    data : tempDataArray
+                    apidata : tempDataArray,
+                    extradata : futuredata
                 });
             })
             .catch((error)=>{
@@ -251,9 +265,10 @@ export class UpperStock extends React.PureComponent {
                         </div>
                     </div>
                 </div>
-                <div className="upper__stock__chart" style={{background : 'rgba(0,0,0,0)'}}>
+                <div className="upper__stock__chart">
                     <UpperStockChart 
-                        data={this.state.data} 
+                        apidata={this.state.apidata}
+                        extradata={this.state.extradata} 
                         width={this.state.chartWidth}   
                         height={this.state.chartHeight}
                         status={priceClass}

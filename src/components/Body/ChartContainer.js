@@ -678,8 +678,8 @@ export class ChartContainer extends React.PureComponent {
                                     key={1} 
                                     openPrice={this.props.stockData.open_price}
                                     closePrice={this.props.stockData.close_price}
-                                    currentPrice={0}
-                                    // currentPrice={this.props.stockData.last_traded_price}
+                                    // currentPrice={0}
+                                    currentPrice={this.props.stockData.last_traded_price}
                                     initial={this.props.initial}
                                     // stockData={this.props.stockData}
                                     range={this.state.range} 

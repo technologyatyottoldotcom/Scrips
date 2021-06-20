@@ -76,9 +76,11 @@ export class StockChart extends React.PureComponent {
 
     componentDidUpdate(prevProps)
     {
+        
         if(this.props.currentPrice !== prevProps.currentPrice)
         {
             console.log('update head');
+            console.log(this.props.currentPrice)
             this.updateHead();
         }
         // this.updateChart();
@@ -111,7 +113,8 @@ export class StockChart extends React.PureComponent {
 
         // xAccessorVal = d => d.date;
         // xScaleVal = scaleTime();
-        // displayxAccessorVal = d => d.date;        
+        // displayxAccessorVal = d => d.date;    
+        // console.log(chartdata);    
 
         [calculatedData,chartSeries] = this.getChartType(chartType,chartdata);
         IndicatorChartTypeArray.map((i,index)=>{
@@ -143,7 +146,7 @@ export class StockChart extends React.PureComponent {
         // console.log(dataVal[start],dataVal[end]);
         xExtents = [start,end];
 
-        console.log(xExtents);
+        // console.log(xExtents);
 
         // let openPrice = parseFloat(this.props.openPrice.replace(',',''));
         // let closePrice = parseFloat(this.props.closePrice.replace(',',''));
@@ -660,6 +663,8 @@ export class StockChart extends React.PureComponent {
         let startDate = type.itemFirst.date;
         let endDate = type.itemLast.date;
 
+        console.log(startDate,endDate)
+
         let xAccessorVal = this.state.chartConfig.xAccessorVal;
         let dataVal = this.state.chartConfig.dataVal;
 
@@ -673,7 +678,7 @@ export class StockChart extends React.PureComponent {
             return d.date === endDate;
         });
 
-        console.log(startIndx,endIndx);
+        // console.log(startIndx,endIndx);
 
         let start = xAccessorVal(dataVal[Math.min(startIndx,dataVal.length-1)]);
         let end = xAccessorVal(dataVal[Math.max(dataVal.length - (endIndx) + buffer,0)]);
@@ -700,6 +705,7 @@ export class StockChart extends React.PureComponent {
             // console.log('Rendering StockChart....');
             // console.log(this.state.chartProps.lastPoint);c
             // console.log(this.props.initial);
+            // console.log('---RENDER CHART---');
 
             const {type,width,height,ratio,range,zoom,chartType,TotalCharts,IndicatorChartTypeArray,trendLineType} = this.props;
 
@@ -753,7 +759,7 @@ export class StockChart extends React.PureComponent {
 
                         {this.state.chartConfig.chartSeries}
 
-                        <ChartInteraction yAccessor={d => d.open} setInteractionType={this.setInteractionType}/>
+                        {/* <ChartInteraction yAccessor={d => d.open} setInteractionType={this.setInteractionType}/> */}
 
                         
                         {!zoom && <>
@@ -855,10 +861,6 @@ export class StockChart extends React.PureComponent {
                             stroke='none'
                             isLabled={false}
                         />
-                        
-                        
-
-                        
 
                         {/* <TrendLine
                                 ref={this.saveInteractiveNodes("Trendline", 1)}

@@ -65,7 +65,7 @@ class ScripsBody extends React.PureComponent
         this.makeSocketConnection()
         .then(()=>{
             this.loadChartData(this.state.range,options.candle,options.duration,options.mixed);
-            this.loadBigChartData('MAX',3,1,true);
+            // this.loadBigChartData('MAX',3,1,true);
             this.checkConnection();
             this.SnapShotRequest(this.state.stockDetails.stockSymbol,this.state.stockDetails.stockNSECode,this.state.stockDetails.stockBSECode,this.state.stockDetails.stockExchange.exchange);
         });
@@ -85,7 +85,7 @@ class ScripsBody extends React.PureComponent
                 isLoaded : false
             },()=>{
                 this.loadChartData(this.state.range,options.candle,options.duration,options.mixed);
-                this.loadBigChartData('MAX',3,1,true);
+                // this.loadBigChartData('MAX',3,1,true);
                 this.checkConnection();
                 this.SnapShotRequest(this.state.stockDetails.stockSymbol,this.state.stockDetails.stockNSECode,this.state.stockDetails.stockBSECode,this.state.stockDetails.stockExchange.exchange);
 

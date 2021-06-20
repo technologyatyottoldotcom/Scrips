@@ -22,21 +22,23 @@ const holidays = [
         '4-11-2021'
 ];
 
+const defaultStartTime = {
+    startHour : 9,
+    startMinute : 15,
+    startSecond : 0
+}
+const defaultEndTime = {
+    endHour : 15,
+    endMinute : 29,
+    endSecond : 0
+}
+
 function getNextMonths(days,isCount=true)
 {
     //does not count saturday and sunday
     let nod = 0,incr = 1;
     let futureDays = [];
-    const defaultStartTime = {
-        startHour : 9,
-        startMinute : 15,
-        startSecond : 0
-    }
-    const defaultEndTime = {
-        endHour : 15,
-        endMinute : 29,
-        endSecond : 0
-    }
+    
     if(isCount)
     {
         let today = moment();
@@ -77,16 +79,7 @@ function getNextDays(days,isCount=true)
     //does not count saturday and sunday
     let nod = 0,incr = 1;
     let futureDays = [];
-    const defaultStartTime = {
-        startHour : 9,
-        startMinute : 15,
-        startSecond : 0
-    }
-    const defaultEndTime = {
-        endHour : 15,
-        endMinute : 29,
-        endSecond : 0
-    }
+    
     if(isCount)
     {
         let today = moment();
@@ -125,19 +118,8 @@ function getNextDays(days,isCount=true)
 function getNextMinutes(curr,minutes)
 {
     let today = curr;
-    console.log(today);
+    // console.log(today);
     let futureDays = [];
-
-    const defaultStartTime = {
-        startHour : 9,
-        startMinute : 15,
-        startSecond : 0
-    }
-    const defaultEndTime = {
-        endHour : 15,
-        endMinute : 29,
-        endSecond : 0
-    }
 
     let EnoughTime = isEnoughTime(today,minutes);
 
@@ -215,6 +197,9 @@ function getNextMinutes(curr,minutes)
     return futureDays;
     
 }
+
+
+
 
 function getNextWorkingDay(day)
 {
@@ -759,6 +744,37 @@ export function getStartPointIndex(data,range,lastPoint,firstPoint)
     else
     {
         return data.length - 120;
+    }
+}
+
+export function getEndOfDayMinutes(lastPoint)
+{
+    let last = moment(lastPoint.date);
+    let curr = moment();
+
+    if(isMarketClosed(curr))
+    {
+        return [];
+    }
+    else
+    {
+        // console.log(last);
+        let startDT = last.clone().set({
+            'hour' : last.get('hour'),
+            'minute' : last.get('minutes'),
+            'second' : last.get('seconds')
+        });
+
+        let endDT = last.clone().set({
+            'hour' : defaultEndTime.endHour,
+            'minute' : defaultEndTime.endMinute,
+            'second' : defaultEndTime.endSecond
+        });
+
+        // console.log(startDT,endDT);
+        let points = getMinuteInterval(startDT,endDT,1);
+        // console.log(points);
+        return points;
     }
 }
 
