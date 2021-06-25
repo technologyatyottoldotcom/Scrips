@@ -7,6 +7,8 @@ function getStockData(req,res){
 
     let options = req.query;
 
+    // console.log(options);
+
     getData(options).then((data)=>{
         res.json(data);
     })
@@ -23,6 +25,7 @@ function getData(options)
         let stockArray = [];
         
         let url = `https://mastertrust-charts.tradelab.in/api/v1/charts?exchange=${options.exchange}&token=${options.token}&candletype=${options.ct}&starttime=${options.starttime}&endtime=1632583718&data_duration=${options.dd}`;
+        // console.log(url);
         axios.get(url)
         .then(res=>{
             const data = res.data;
@@ -49,7 +52,7 @@ function getData(options)
                             conn.query(query,(err,result)=>{
                                 if(!err)
                                 {
-                                    // console.log(result);
+                                    console.log(result.length);
                                     let dbArray = result.map(obj => Object.values(obj));
                                     // console.log('db Array Temp : ',dbArrayTemp.length);
 
@@ -58,7 +61,7 @@ function getData(options)
                                     // console.log('db Array : ',dbArray.length,typeof dbArray);
                                     stockArray = stockArray.concat(dbArray);
                                     stockArray = stockArray.concat(apiArray);
-                                    // console.log('length : ',stockArray.length);
+                                    console.log('length : ',stockArray.length);
                                     resolve({
                                         data : stockArray,
                                         status : 'success',

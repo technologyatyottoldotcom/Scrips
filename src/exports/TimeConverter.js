@@ -31,11 +31,36 @@ export function convertToUNIX(range)
 }
 
 
-export function dateToUNIX(date)
+export function dateToUNIX(date,range)
 {
     if(date)
     {
-        return moment(date).add(1,'minute').clone().unix();
+        let curr = moment();
+        // console.log('START ---> ',moment(date).add(1,'minute').clone().format('DD-MM-YYYY HH:mm:ss'));
+        switch(range){
+            case 'D' : 
+                return moment(date).add(1,'minute').clone().unix();
+            case '1D' : 
+                return moment(date).add(1,'minute').clone().unix();
+            case '5D' :
+                return moment(date).add(5,'minute').clone().unix();
+            case '1M' :
+                return moment(date).add(30,'minute').clone().unix();
+            case '3M' : 
+                return moment(date).add(60,'minute').clone().unix();
+            case '6M' : 
+                return moment(date).add(120,'minute').clone().unix();
+            case 'YTD' : 
+                return curr.subtract(1,'year').startOf('year').clone().unix();
+            case '1Y' : 
+                return curr.subtract(3,'years').startOf('year').clone().unix();
+            case '5Y' : 
+                return curr.subtract(10,'years').startOf('year').clone().unix();
+            case 'MAX' : 
+                return curr.clone().unix();
+            default : 
+                return curr.subtract(1,'year').startOf('year').clone().unix();
+        }  
     }
 }
 

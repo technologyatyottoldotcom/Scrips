@@ -1074,6 +1074,7 @@
   width: 100%;
   height: 100%;
   position: relative;
+  /* background-color: #000000; */
 }
 
 .app__body .app__body__left .chart__container .stock__chart.stock__chart__blur 

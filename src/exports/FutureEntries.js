@@ -363,28 +363,28 @@ export function getFuturePoints(lastPoint,range)
             return points;
         
         case '1D' : 
-            futureDaysArr = getNextDays(1);
+            futureDaysArr = getNextMinutes(curr,60);
             // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,1);
             // console.log(points);
             return points;
         
         case '5D' : 
-            futureDaysArr = getNextDays(5);
+            futureDaysArr = getNextDays(1);
             // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,5);
             // console.log(points);
             return points;
         
         case '1M' : 
-            futureDaysArr = getNextDays(10);
+            futureDaysArr = getNextDays(4);
             // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,30);
             // console.log(points);
             return points;
         
         case '3M' : 
-            futureDaysArr = getNextDays(30);
+            futureDaysArr = getNextDays(10);
             // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,60);
             // console.log(points);
@@ -461,13 +461,13 @@ export function getStartPointIndex(data,range,lastPoint,firstPoint)
             'year' : lastPoint.date.getFullYear()
         })
         .subtract(5,'days');        
-        console.log(dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
+        // console.log(dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
         while(!found)
         {
             let indx = data.findIndex(d => {
                 return d.date.getDate() === dt.get('date') && d.date.getMonth() === (dt.get('month')) && d.date.getFullYear() === dt.get('year');
             });
-            console.log(indx,dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
+            // console.log(indx,dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
             if(indx === -1)
             {
                 dt = dt.subtract(1,'days');
@@ -479,9 +479,9 @@ export function getStartPointIndex(data,range,lastPoint,firstPoint)
                 break;
             }
 
-            console.log('checking .... ',dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
+            // console.log('checking .... ',dt.format('D'),dt.format('MMM'),dt.format('YYYY'));
         }
-        console.log('INDEX :  -----> ',index);
+        // console.log('INDEX :  -----> ',index);
         return index;
     }
 

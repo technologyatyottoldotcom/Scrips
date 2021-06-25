@@ -675,10 +675,9 @@ export class ChartContainer extends React.PureComponent {
                         {this.props.dataLoaded ? 
                             <div className="stock__chart">
                                 <StockChart 
-                                    key={1} 
+                                    key={this.state.zoom ? 1 : 2} 
                                     openPrice={this.props.stockData.open_price}
                                     closePrice={this.props.stockData.close_price}
-                                    // currentPrice={0}
                                     currentPrice={this.props.stockData.last_traded_price}
                                     initial={this.props.initial}
                                     // stockData={this.props.stockData}

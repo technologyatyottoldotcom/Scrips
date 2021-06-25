@@ -16,6 +16,7 @@ import Exit from './MenuSection/Exit';
 import { BusinessNews } from './BusinessNews/BusinessNews';
 import {readMarketData,readMarketStatus} from '../../exports/FormatData';
 import {getCandleDuration} from '../../exports/MessageStructure';
+import {splitAdjustment} from '../../exports/SplitAdjustment';
 import {getFuturePoints,getStartPointIndex,filterBigData} from '../../exports/FutureEntries';
 import {convertToUNIX,dateToUNIX} from '../../exports/TimeConverter';
 import '../../css/BusinessNews.css';
@@ -57,6 +58,7 @@ class ScripsBody extends React.PureComponent
 
         this.SnapShotRequest = this.SnapShotRequest.bind(this);
         this.setRange = this.setRange.bind(this);
+        this.appendRandomData = this.appendRandomData.bind(this);
     }
 
     componentDidMount()
@@ -65,7 +67,7 @@ class ScripsBody extends React.PureComponent
         this.makeSocketConnection()
         .then(()=>{
             this.loadChartData(this.state.range,options.candle,options.duration,options.mixed);
-            // this.loadBigChartData('MAX',3,1,true);
+            this.loadBigChartData('MAX',3,1,true);
             this.checkConnection();
             this.SnapShotRequest(this.state.stockDetails.stockSymbol,this.state.stockDetails.stockNSECode,this.state.stockDetails.stockBSECode,this.state.stockDetails.stockExchange.exchange);
         });
@@ -85,7 +87,7 @@ class ScripsBody extends React.PureComponent
                 isLoaded : false
             },()=>{
                 this.loadChartData(this.state.range,options.candle,options.duration,options.mixed);
-                // this.loadBigChartData('MAX',3,1,true);
+                this.loadBigChartData('MAX',3,1,true);
                 this.checkConnection();
                 this.SnapShotRequest(this.state.stockDetails.stockSymbol,this.state.stockDetails.stockNSECode,this.state.stockDetails.stockBSECode,this.state.stockDetails.stockExchange.exchange);
 
@@ -200,15 +202,14 @@ class ScripsBody extends React.PureComponent
 
     }
 
-    async loadChartData(type,ct,dd,mixed)
+    async loadChartData(type,ct,dd,mixed)   
     {
 
         this.setState({
-            dataLoaded : false
+            dataLoaded : false,
         })
 
         let startUNIX = convertToUNIX(type);
-
 
         let exchange = this.props.stockDetails.stockExchange.exchange;
         let code;
@@ -259,6 +260,9 @@ class ScripsBody extends React.PureComponent
                 });
 
                 // console.log(tempDataArray);
+
+                // tempDataArray = splitAdjustment(tempDataArray);
+
                 let lastPoint = tempDataArray[tempDataArray.length - 1];
                 let firstPoint = tempDataArray[0];
                 let startIndex = getStartPointIndex(tempDataArray,type,lastPoint,firstPoint);
@@ -284,6 +288,7 @@ class ScripsBody extends React.PureComponent
                     }
                 },()=>{
                     this.updateChartData(type,ct,dd,mixed);
+                    // this.appendRandomData(type);
                 })
             }
 
@@ -301,7 +306,7 @@ class ScripsBody extends React.PureComponent
         updateInterval = setInterval(()=>{
 
             let lastPoint = this.state.chartProps.lastPoint;
-            let startUNIX = dateToUNIX(lastPoint.date);
+            let startUNIX = dateToUNIX(lastPoint.date,type);
 
             // console.log(lastPoint.date,lastPoint.open);
 
@@ -318,6 +323,8 @@ class ScripsBody extends React.PureComponent
             {
                 code = this.state.stockDetails.stockBSECode;
             }
+
+            // console.log(ct,dd);
 
             Axios.get(`http://${REQUEST_BASE_URL}:8000/stockdata`,{
                 params : {
@@ -390,7 +397,7 @@ class ScripsBody extends React.PureComponent
                     }
                     else
                     {
-                        // console.log('Wait');
+                        console.log('Wait');
                     }
                 }
 
@@ -461,6 +468,8 @@ class ScripsBody extends React.PureComponent
                     tempDataArray.push(dobj);
 
                 });
+
+                // tempDataArray = splitAdjustment(tempDataArray);
 
                 this.setState({
                     bigdataLoaded : true,
@@ -590,6 +599,51 @@ class ScripsBody extends React.PureComponent
         }
         
     }
+
+    appendRandomData = (type) => {
+        updateInterval = setInterval(() => {
+          
+          let lastPoint = this.state.chartProps.lastPoint;
+          console.log(lastPoint);
+          let newdate = lastPoint;
+          newdate.date.setTime(newdate.date.getTime() + (1*60*1000));
+          // console.log(newdate.date);
+          let dobj = {
+              date : newdate.date,
+              open : this.state.currentPrice,
+              high : parseFloat(lastPoint.high),
+              low : parseFloat(lastPoint.low),
+              close : parseFloat(lastPoint.close + this.randomInteger(2,-2)),
+              volume : parseInt(lastPoint.volume)
+          }
+          
+          // console.log(dobj);
+                  
+                      
+          let stockArray = this.state.chartProps.chartdata;
+          let futurePoints = getFuturePoints(type,lastPoint);
+          stockArray.push(dobj);
+          // console.log(stockArray);
+          if(stockArray.length > 0)
+          {
+                this.setState({
+                    chartProps : {
+                        chartdata : stockArray,
+                        extradata : futurePoints,
+                        lastPoint : lastPoint,
+                        startIndex : 0,
+                        extraPoints : futurePoints.length,
+                        range : type
+                    }
+                });
+                            
+            }
+        }, 10000);
+      };
+
+      randomInteger(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
     
     render()
     {

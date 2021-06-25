@@ -8,7 +8,7 @@ import {ChartCanvas,Chart} from 'react-stockcharts';
 import {XAxis,YAxis} from 'react-stockcharts/lib/axes';
 import {LineSeries,AreaSeries,BarSeries,CandlestickSeries,ScatterSeries ,OHLCSeries,KagiSeries,RenkoSeries,PointAndFigureSeries, SquareMarker,CircleMarker , BollingerSeries , MACDSeries , RSISeries ,StochasticSeries ,StraightLine ,ElderRaySeries , SARSeries , VolumeProfileSeries} from 'react-stockcharts/lib/series';
 import { pointAndFigure ,kagi,renko} from "react-stockcharts/lib/indicator";
-import { discontinuousTimeScaleProvider } from "react-stockcharts/lib/scale";
+import { discontinuousTimeScaleProvider , discontinuousTimeScaleProviderBuilder } from "react-stockcharts/lib/scale";
 import {fitWidth} from 'react-stockcharts/lib/helper';
 import { last ,toObject , rightDomainBasedZoomAnchor , lastVisibleItemBasedZoomAnchor } from "react-stockcharts/lib/utils/zoomBehavior";
 import {lastValidVisibleItemBasedZoomAnchor} from './CustomChartComponents/ZoomBehaviour/zoomBehaviour';
@@ -20,11 +20,9 @@ import {getXCoordinateProps, getYCoordinateProps, getXAxisProps, getYAxisProps ,
 import { CrossHairCursor, MouseCoordinateX, MouseCoordinateY ,PriceCoordinate, EdgeIndicator  } from "react-stockcharts/lib/coordinates";
 import {sma20,wma20,ema20,tma20,bb,macdCalculator,rsiCalculator,atrCalculator,slowSTO,fastSTO,fullSTO,fi,fiEMA,elder,elderImpulseCalculator,defaultSar,changeCalculator,compareCalculator} from '../../exports/MathematicalIndicators';
 import {TrendLineAppearance,EquidistantChannelAppearance,StandardDeviationChannelAppearance,FibRetAppearance,GannFanAppearance} from '../../exports/InteractiveAppearance';
-import { head } from "react-stockcharts/lib/utils";
 import LastPointIndicator from './CustomChartComponents/LastPointEdgeIndicator/LastPointIndicator';
 import PriceMarkerCoordinate from './CustomChartComponents/PriceMarker/PriceMarkerCoordinate';
 import LabelEdgeCoordinate from './CustomChartComponents/EdgeLabel/LabelEdgeCoordinate';
-import ChartInteraction from './CustomChartComponents/ChartInteraction/ChartInteraction';
 
 
 export class StockChart extends React.PureComponent {
@@ -37,16 +35,21 @@ export class StockChart extends React.PureComponent {
         this.handleSelection = this.handleSelection.bind(this);
         this.saveInteractiveNodes = saveInteractiveNodes.bind(this);
         this.getInteractiveNodes = getInteractiveNodes.bind(this);
-        this.saveCanvasNode = this.saveCanvasNode.bind(this);
+        this.saveCanvas = this.saveCanvas.bind(this);
         this.onDrawCompleteChart = this.onDrawCompleteChart.bind(this);
         this.updateChart = this.updateChart.bind(this);
         this.updateHead = this.updateHead.bind(this);
         this.setInteractionType = this.setInteractionType.bind(this);
-        this.setupChart = this.setupChart.bind(this);
+        this.setUpChart = this.setUpChart.bind(this);
+        this.handleDownloadMore = this.handleDownloadMore.bind(this);
 
         this.state = {
             isInteracted : false,
-            chartConfig : null,
+            data : null,
+            xScale : null,
+            xAccessor : null, 
+            displayXAccessor : null,
+            initialIndex: 0,
             apidata : this.props.chartProps.chartdata,
             extradata : this.props.chartProps.extradata,
             chartdata : null,
@@ -64,14 +67,15 @@ export class StockChart extends React.PureComponent {
         };
     }
 
-    saveCanvasNode(node) {
-		this.canvasNode = node;
+    saveCanvas(node) {
+		this.canvas = node;
     }
     
     componentDidMount() {
         console.log('Stock Chart Mounted...');
+        // console.log('MOUNT');
         document.addEventListener("keyup", this.onKeyPress);
-        this.setupChart(); 
+        this.setUpChart(); 
     }
 
     componentDidUpdate(prevProps)
@@ -79,103 +83,114 @@ export class StockChart extends React.PureComponent {
         
         if(this.props.currentPrice !== prevProps.currentPrice)
         {
-            console.log('update head');
-            console.log(this.props.currentPrice)
+            // console.log('update head');
+            // console.log(this.props.currentPrice)
             this.updateHead();
         }
         // this.updateChart();
+    }
+
+    componentWillReceiveProps(nextProps) {
+        this.updateChart();
     }
     
     // componentWillUnmount() {
 	// 	document.removeEventListener("keyup", this.onKeyPress);
     // }
 
-    setupChart()
+    setUpChart()
     {
-        const {type,width,height,ratio,range,zoom,chartType,TotalCharts,IndicatorChartTypeArray,trendLineType} = this.props;
 
-        // console.log(this.props);
-        let chartdata = this.props.chartProps.chartdata;
-        // console.log(extradata);
-        let dataVal;
-        let xAccessorVal;
-        let xScaleVal;
-        let displayxAccessorVal;
-        let calculatedData;
-        let chartSeries;
-        let start,end,xExtents;
-        let lastPoint;
-        let IndicatorsArray = [];
-    
-        // chartdata = chartdata.concat(extradata);
-        lastPoint = this.state.apidata[this.state.apidata.length - 1];
-        chartdata = this.state.apidata.concat(this.state.extradata);
+        console.log('---CHART SETUP---');
 
-        // xAccessorVal = d => d.date;
-        // xScaleVal = scaleTime();
-        // displayxAccessorVal = d => d.date;    
-        // console.log(chartdata);    
-
-        [calculatedData,chartSeries] = this.getChartType(chartType,chartdata);
-        IndicatorChartTypeArray.map((i,index)=>{
-            IndicatorsArray.push(this.getIndicatorData(i,chartdata));
-        });
-
-        // console.log(IndicatorsArray);
-
-        const xScaleProvider = discontinuousTimeScaleProvider
-            .inputDateAccessor(d => d.date);
-            const {
-                data,
-                xScale,
-                xAccessor,
-                displayXAccessor,
-            } = xScaleProvider(calculatedData);
-
-        dataVal = data;
-        xAccessorVal = xAccessor;
-        xScaleVal = xScale;
-        displayxAccessorVal = displayXAccessor;
+        const { chartdata: inputdata , extradata ,  startIndex , lastPoint } = this.props.chartProps;
 
 
-        let buffer = this.getDisplayBuffer(this.props.chartProps.range);
+        console.log('START INDEX : ',startIndex);
+
+        let chartdata = inputdata.concat(extradata);
+
+        const LENGTH_TO_SHOW = chartdata.length - startIndex;
+
+        console.log('LENGTH : ',LENGTH_TO_SHOW);
+
+        const dataToCalculate = chartdata.slice(-LENGTH_TO_SHOW);
+
+        const calculatedData = dataToCalculate;
+
+        const indexCalculator = discontinuousTimeScaleProviderBuilder().indexCalculator();
+
+        const { index } = indexCalculator(calculatedData);
 
 
-        start = xAccessorVal(dataVal[Math.min(this.props.chartProps.startIndex,dataVal.length-1)]);
-        end = xAccessorVal(dataVal[Math.max(dataVal.length - (this.props.chartProps.extraPoints) + buffer,0)]);
-        // console.log(dataVal[start],dataVal[end]);
-        xExtents = [start,end];
+        const xScaleProvider = discontinuousTimeScaleProviderBuilder()
+			.withIndex(index);
+		const { data: linearData, xScale, xAccessor, displayXAccessor } = xScaleProvider(calculatedData.slice(-LENGTH_TO_SHOW));
 
-        // console.log(xExtents);
-
-        // let openPrice = parseFloat(this.props.openPrice.replace(',',''));
-        // let closePrice = parseFloat(this.props.closePrice.replace(',',''));
-        let closePrice = parseFloat(this.props.closePrice);
+        console.log(linearData);
 
         this.setState({
-            chartConfig : {
-                chartdata : chartdata,
-                lastPoint : lastPoint,
-                IndicatorsArray : IndicatorsArray,
-                closePrice : closePrice,
-                chartSeries : chartSeries,
-                dataVal : dataVal,
-                xAccessorVal : xAccessorVal,
-                xScaleVal : xScaleVal,
-                displayxAccessorVal : displayxAccessorVal,
-                xExtents : xExtents
-            }
-        })
-
+            apidata : inputdata,
+            extradata : extradata,  
+            data: linearData, 
+            lastPoint,         
+            xScale,
+            xAccessor, 
+            displayXAccessor,
+        },()=>{
+            // console.log('set');
+        });
     }
 
     updateChart()
     {
         
+        // console.log("--UPDATE CHART--");
+        const { chartdata: newdata , extradata , lastPoint } = this.props.chartProps;
+        let chartdata = newdata.concat(extradata);
+        // let chartdata = newdata;
+        const { initialIndex } = this.state;
+        /* SERVER - START */
+        const dataToCalculate = chartdata.slice(
+          -this.canvas.fullData.length
+        );
+
+        // console.log(dataToCalculate.length);
+
+        // console.log(initialIndex);
+    
+        const calculatedData = dataToCalculate;
+        const indexCalculator = discontinuousTimeScaleProviderBuilder()
+          .initialIndex(initialIndex)
+          .indexCalculator();
+            
+        // console.log(indexCalculator);
+
+        const { index } = indexCalculator(calculatedData);
+        // /* SERVER - END */
+    
+        const xScaleProvider = discontinuousTimeScaleProviderBuilder()
+          .initialIndex(initialIndex)
+          .withIndex(index);
+        const {
+          data: linearData,
+          xScale,
+          xAccessor,
+          displayXAccessor
+        } = xScaleProvider(calculatedData.slice(-this.canvas.fullData.length));
+    
+        // // console.log(head(linearData), last(linearData))
+        // // console.log(linearData.length)
+    
         this.setState({
-            apidata : this.props.chartProps.chartdata,
-            extradata : this.props.chartProps.extradata
-        })
+          apidata : newdata,
+          extradata : extradata,
+          data: linearData,
+          lastPoint,
+          xScale,
+          xAccessor,
+          displayXAccessor
+        });
         
     }
 
@@ -188,6 +203,64 @@ export class StockChart extends React.PureComponent {
         this.setState({
             apidata : apidata
         });
+    }
+
+    setChartConfiguration()
+    {
+
+    }
+
+    handleDownloadMore(start, end) {
+
+        // console.log('dm');
+        if (Math.ceil(start) === end) return;
+		// console.log("rows to download", rowsToDownload, start, end)
+        console.log(this.state);
+        const { data: prevData } = this.state;
+		const { chartdata: inputData } = this.props.chartProps;
+
+        console.log('PREV LENGTH : ',prevData.length);
+
+
+        if (inputData.length === prevData.length) return;
+
+        // console.log(end,start);
+
+		const rowsToDownload = end - Math.ceil(start);
+
+
+        const dataToCalculate = inputData
+			.slice(-rowsToDownload  - prevData.length, - prevData.length);
+
+        const calculatedData = dataToCalculate;
+
+        // console.log(calculatedData);
+        
+        const indexCalculator = discontinuousTimeScaleProviderBuilder()
+            .initialIndex(Math.ceil(start))
+            .indexCalculator();
+        const { index } = indexCalculator(
+        calculatedData.slice(-rowsToDownload).concat(prevData)
+        );
+        /* SERVER - END */
+
+        const xScaleProvider = discontinuousTimeScaleProviderBuilder()
+        .initialIndex(Math.ceil(start))
+        .withIndex(index);
+
+		const { data: linearData, xScale, xAccessor, displayXAccessor } = xScaleProvider(calculatedData.slice(-rowsToDownload).concat(prevData));
+		
+        // console.log(linearData);
+        setTimeout(() => {
+			this.setState({
+                data: linearData,
+                xScale,
+                xAccessor,
+                displayXAccessor,
+                initialIndex: Math.ceil(start)
+			});
+		}, 300);
+        
     }
 
     handleSelection(interactives) {
@@ -264,7 +337,7 @@ export class StockChart extends React.PureComponent {
             const GannFan = this.state.GannFan
 				.filter(each => !each.selected);
 
-			this.canvasNode.cancelDrag();
+			this.Canvas.cancelDrag();
 			this.setState({
                 trends,
                 channel,
@@ -279,7 +352,7 @@ export class StockChart extends React.PureComponent {
             // console.log(this.TrendLine_1);
 			// this.node_1.terminate();
 			// this.node_3.terminate();
-			this.canvasNode.cancelDrag();
+			this.Canvas.cancelDrag();
 			this.setState({
                 enableTrendLine: false,
                 enableChannel : false,
@@ -665,8 +738,8 @@ export class StockChart extends React.PureComponent {
 
         console.log(startDate,endDate)
 
-        let xAccessorVal = this.state.chartConfig.xAccessorVal;
-        let dataVal = this.state.chartConfig.dataVal;
+        let xAccessorVal = this.state.xAccessor;
+        let dataVal = this.state.data;
 
         let buffer = this.getDisplayBuffer(this.props.chartProps.range);
 
@@ -700,16 +773,12 @@ export class StockChart extends React.PureComponent {
 
     render() {
 
-        if(this.state.apidata && this.state.extradata && this.state.chartConfig)
+        if(this.state.data)
         {
-            // console.log('Rendering StockChart....');
-            // console.log(this.state.chartProps.lastPoint);c
-            // console.log(this.props.initial);
-            // console.log('---RENDER CHART---');
-
+            console.log('---RENDER CHART---');
             const {type,width,height,ratio,range,zoom,chartType,TotalCharts,IndicatorChartTypeArray,trendLineType} = this.props;
 
-
+            const { data, xScale, xAccessor, displayXAccessor } = this.state;
             let margin;
 
             if(zoom)
@@ -729,24 +798,27 @@ export class StockChart extends React.PureComponent {
                 
             }
 
-            // console.log(this.state.chartConfig)
+            let chartSeries = this.getChartType(chartType);
+
+            // console.log(this.props.zoom,this.props.width,this.props.height)
+
 
             return (
                 <div>
                     <ChartCanvas 
-                        ref={this.saveCanvasNode}
+                        ref={this.saveCanvas}
                         width={width} 
                         height={height} 
                         ratio={ratio}
                         margin = {margin}
                         seriesName="IBM"
                         postCalculator={compareCalculator}
-                        xScale={this.state.chartConfig.xScaleVal}
-                        xAccessor={this.state.chartConfig.xAccessorVal}
-                        displayXAccessor={this.state.chartConfig.displayxAccessorVal}
-                        data={this.state.chartConfig.dataVal}
+                        xScale={xScale}
+                        xAccessor={xAccessor}
+                        displayXAccessor={displayXAccessor}
+                        data={data}
                         type={type}
-                        xExtents={this.state.chartConfig.xExtents}
+                        onLoadMore={this.handleDownloadMore}
                         zoomAnchor={lastValidVisibleItemBasedZoomAnchor} 
                     >
 
@@ -754,12 +826,13 @@ export class StockChart extends React.PureComponent {
                     <Chart 
                         id={1} 
                         padding={30}
-                        yExtents={d=> this.getYExtents(zoom,d.high,d.low,this.state.chartConfig.lastPoint)} 
+                        yExtents={d=> this.getYExtents(zoom,d.high,d.low,this.state.lastPoint)} 
                         height={this.getChartHeight(height,zoom,TotalCharts)}>
 
-                        {this.state.chartConfig.chartSeries}
-
-                        {/* <ChartInteraction yAccessor={d => d.open} setInteractionType={this.setInteractionType}/> */}
+                        {/* {this.state.chartConfig.chartSeries} */}
+                        {chartSeries}
+                        {/* <LineSeries yAccessor ={d =>d.open} strokeWidth={2} stroke="#00a0e3" interpolation={curveCardinal}/> */}
+                        {/* <LastPointIndicator yAccessor={d => d.open} displayFormat={format(".4s")} radius={4} fill='#00a0e3'/> */}
 
                         
                         {!zoom && <>
@@ -781,16 +854,16 @@ export class StockChart extends React.PureComponent {
 
                         {zoom && <>
 
-                            <YAxis {...getYAxisProps()} {...this.state.chartConfig.gridProps}/>
+                            <YAxis {...getYAxisProps()} {...gridProps}/>
 
                             {TotalCharts === 1 ? 
                                 <>
-                                    <XAxis {...getXAxisProps()} {...this.state.chartConfig.gridProps}/>
+                                    <XAxis {...getXAxisProps()} {...gridProps}/>
                                     <MouseCoordinateX {...getXCoordinateProps(range)}/>
                                     <LabelEdgeCoordinate 
                                         at="right"
                                         orient="left"
-                                        price={this.state.chartConfig.lastPoint.open}
+                                        price={this.state.lastPoint.open}
                                         displayFormat={format('.2f')}
                                         labelText={this.props.stockDetails.stockNSECode}
                                         fill="#00a0e3"
@@ -806,7 +879,7 @@ export class StockChart extends React.PureComponent {
                                     <PriceCoordinate 
                                         at="right"
                                         orient="right"
-                                        price={this.state.chartConfig.lastPoint.open}
+                                        price={this.state.lastPoint.open}
                                         displayFormat={format('.2f')}
                                         fill="#00a0e3"
                                         rectHeight={18}
@@ -842,7 +915,8 @@ export class StockChart extends React.PureComponent {
                         <PriceMarkerCoordinate 
                             at="left"
                             orient="right"
-                            price={this.state.chartConfig.closePrice}
+                            // price={this.state.closePrice}
+                            price={100}
                             displayFormat={format('.2f')}
                             strokeDasharray="ShortDot"
                             dx={20} 
@@ -934,7 +1008,7 @@ export class StockChart extends React.PureComponent {
 
                     </Chart>
 
-                    {zoom && 
+                    {/* {zoom && 
                         this.state.chartConfig.IndicatorsArray.map((i,index) => {
                             let series = i[1];
                             let yExtents = i[2];
@@ -958,7 +1032,7 @@ export class StockChart extends React.PureComponent {
                                 
                             </Chart>
                         })
-                    }
+                    } */}
 
                     {zoom && <CrossHairCursor />}
 

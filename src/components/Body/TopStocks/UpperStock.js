@@ -113,7 +113,7 @@ export class UpperStock extends React.PureComponent {
                     tempDataArray.push(dobj);
                 });
 
-                console.log(tempDataArray.length);
+                // console.log(tempDataArray.length);
 
                 let lastPoint = tempDataArray[tempDataArray.length-1];
 

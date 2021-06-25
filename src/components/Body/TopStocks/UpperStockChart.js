@@ -71,7 +71,7 @@ export class UpperStockChart extends React.PureComponent {
         xScaleVal = xScale;
         displayxAccessorVal = displayXAccessor;
 
-        console.log(chartdata);
+        // console.log(chartdata);
 
         this.setState({
             chartConfig : {
