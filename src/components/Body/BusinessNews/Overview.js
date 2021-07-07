@@ -3,41 +3,7 @@ import Website from '../../../assets/icons/website.svg';
 import '../../../scss/Overview.scss';
 import Axios from 'axios';
 
-const REQUEST_BASE_URL = 'localhost';
-
-const TempData =  {
-    "name": "3i Infotech Ltd",
-    "nse_code": "3IINFOTECH",
-    "bse_code": "532628",
-    "ric_code": "TIIN.NS",
-    "reuters_about": "3i Infotech Limited is an information technology (IT) company. The Company provides a set of Internet protocol (IP)-based software solutions with a range of IT services. The Company operates through two segments: IT Solutions and Transaction Services. The IT Solutions segment includes sale of IT products developed by the Company and provides IT services to various companies on an outsourcing business model. The IT product business includes packaged applications for the banking, insurance, capital markets, asset and wealth management (BFSI) space and an enterprise resource planning (ERP) suite. Its IT services include system integration and IT consulting through its business process outsourcing (BPO) operations. The Transaction Services segment covers management of back office operations for BFSI clients. Through transaction service offerings, the Company provides clients with services, such as human resources and payroll management services, securitization and contact center services.",
-    "screener_web_link": "http://www.3i-infotech.com",
-    "screener_nse_link": "https://www.nseindia.com/get-quotes/equity?symbol=3IINFOTECH",
-    "screener_bse_link": "https://www.bseindia.com/stock-share-price/3i-infotech-ltd/3IINFOTECH/532628/",
-    "screener_ar_year1": "2020",
-    "screener_ar_link1": "https://www.bseindia.com/bseplus/AnnualReport/532628/67627532628.pdf",
-    "screener_ar_year2": "2019",
-    "screener_ar_link2": "https://www.bseindia.com/bseplus/AnnualReport/532628/5326280319.pdf",
-    "screener_ar_year3": "2018",
-    "screener_ar_link3": "https://www.bseindia.com/bseplus/AnnualReport/532628/5326280318.pdf",
-    "screener_ar_year4": "2017",
-    "screener_ar_link4": "https://www.bseindia.com/bseplus/AnnualReport/532628/5326280317.pdf",
-    "screener_ar_year5": "2016",
-    "screener_ar_link5": "https://www.bseindia.com/bseplus/AnnualReport/532628/5326280316.pdf",
-    "reuters_contact_info": " Tower 5, 3Rd To 6Th Floor International Infotech Park Vashi Station Complex 400703 India",
-    "reuters_phone_number": "+91.22.71238000",
-    "reuters_website": "https://www.3i-infotech.com/",
-    "reuters_officer_name1": "Padmanabhan Iyer",
-    "reuters_officer_designation1": "Global Chief Executive Officer, Managing Director, Whole-time Director",
-    "reuters_officer_name2": "Pankaj Chawla",
-    "reuters_officer_designation2": "President, India, Middle East, APAC & Africa",
-    "reuters_officer_name3": "Kumar Ganesan",
-    "reuters_officer_designation3": "President – North America & Western Europe and Global Head - IT Services",
-    "reuters_officer_name4": "Rajeev Limaye",
-    "reuters_officer_designation4": "Compliance Officer, Company Secretary",
-    "reuters_officer_name5": "Amar Chintopanth",
-    "reuters_officer_designation5": "Deputy Managing Director"
-}
+const REQUEST_BASE_URL = process.env.REACT_APP_REQUEST_BASE_URL;
 
 function NoAnyDataFound({ text }) {
     return <div style={{ color: '#ccc', textAlign: 'center' }}>{text ? text : '-- No any data found --'}</div>
@@ -237,7 +203,7 @@ class Overview extends React.PureComponent {
             stockDetails : this.props.stockDetails,
             loading : true,
             error: null,
-            data: TempData,
+            data: null,
         }
         this.DataRequest = this.DataRequest.bind(this);
     }

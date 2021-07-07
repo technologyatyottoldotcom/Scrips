@@ -831,8 +831,6 @@ export class StockChart extends React.PureComponent {
 
                         {/* {this.state.chartConfig.chartSeries} */}
                         {chartSeries}
-                        {/* <LineSeries yAccessor ={d =>d.open} strokeWidth={2} stroke="#00a0e3" interpolation={curveCardinal}/> */}
-                        {/* <LastPointIndicator yAccessor={d => d.open} displayFormat={format(".4s")} radius={4} fill='#00a0e3'/> */}
 
                         
                         {!zoom && <>
@@ -915,8 +913,7 @@ export class StockChart extends React.PureComponent {
                         <PriceMarkerCoordinate 
                             at="left"
                             orient="right"
-                            // price={this.state.closePrice}
-                            price={100}
+                            price={this.props.closePrice}
                             displayFormat={format('.2f')}
                             strokeDasharray="ShortDot"
                             dx={20} 

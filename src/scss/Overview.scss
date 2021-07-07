@@ -24,7 +24,7 @@
 {
   display: flex;
   justify-content: space-between;
-  padding-left: 10px;
+  padding: 0 10px 0 20px;
 }
 
 .bn__stock__price
@@ -70,9 +70,9 @@
 
 .bn__stock__snapbox>p
 {
-  font-size: 14px!important;
+  font-size: 13px!important;
   font-weight: 900;
-  color: var(--font-primary);
+  color: #000000;
 }
 
 .bn__stock__snapbox .bn__stock__data
@@ -94,19 +94,17 @@
 {
 
   margin: 10px 0;
-
   div:first-child
   {
-
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--font-primary);
   }
   div:last-child
   {
-
+    margin-top: -2px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--font-secondary);
   }
 }
@@ -145,9 +143,10 @@
     border-radius: 3px;
 
     p{
-      font-size: 14px!important;
+      font-size: 13px!important;
       font-weight: 700;
       margin-bottom: 5px!important;
+      color: #000000;
     }
 
   }
@@ -172,9 +171,10 @@
       color: var(--font-primary);
 
       p{
-        font-size: 14px!important;
+        font-size: 13px!important;
         font-weight: 700;
         margin-bottom: 5px!important;
+        color: #000000;
       }
     }
     >div:last-child
@@ -186,9 +186,10 @@
       color: var(--font-primary);
 
       p{
-        font-size: 14px!important;
+        font-size: 13px!important;
         font-weight: 700;
         margin-bottom: 5px!important;
+        color: #000000;
       }
 
       span:first-child{

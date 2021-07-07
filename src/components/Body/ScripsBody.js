@@ -26,7 +26,7 @@ import 'rsuite/dist/styles/rsuite-default.css';
 
 
 
-const REQUEST_BASE_URL = process.env.REACT_APP_REQUEST_BASE_URL;;
+const REQUEST_BASE_URL = process.env.REACT_APP_REQUEST_BASE_URL;
 
 let updateInterval,bigdatainterval;
 
@@ -38,12 +38,10 @@ class ScripsBody extends React.PureComponent
     {
         super(props);
         this.state = {
-            initial : true,
             chartdata : null,
             bigchartdata : null,
             chartProps : null,
             stockData : '',
-            tempData : '',
             stockDetails : this.props.stockDetails,
             oldStockDetails : this.props.stockDetails,
             snapdata : null,
@@ -80,10 +78,14 @@ class ScripsBody extends React.PureComponent
         {
             let options = getCandleDuration(this.state.range);
             console.log('props update : ',this.props.stockDetails.stockCode);
+            clearInterval(updateInterval);
+            clearInterval(bigdatainterval);
             this.setState({
                 stockDetails : this.props.stockDetails,
                 oldStockDetails : this.state.stockDetails,
                 stockData : '',
+                chartdata : null,
+                bigchartdata : null,
                 isLoaded : false
             },()=>{
                 this.loadChartData(this.state.range,options.candle,options.duration,options.mixed);
@@ -191,14 +193,7 @@ class ScripsBody extends React.PureComponent
             }
         }
 
-       setInterval(()=>{
-            //heartbeat message
-            ws.send(JSON.stringify({
-                "a": "h", 
-                "v": [], 
-                "m": ""
-            }));
-       },10000)
+       
 
     }
 
@@ -379,7 +374,6 @@ class ScripsBody extends React.PureComponent
 
 
                         this.setState({
-                            initial : false,
                             chartdata : tempDataArray,
                             isLoaded : true,
                             dataLoaded : true,
@@ -702,15 +696,11 @@ class ScripsBody extends React.PureComponent
                                     {activeElement === 'exit' && <Exit />}
 
                                 </div>
-
-
-                                
                             </div>
                         </div>
                     }
                     <div className="app__body__left">
                         <ChartContainer 
-                            initial={this.state.initial}
                             data={this.state.chartProps.chartdata}
                             extradata={this.state.chartProps.extradata} 
                             stockData={this.state.stockData} 
