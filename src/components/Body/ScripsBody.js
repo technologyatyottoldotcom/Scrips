@@ -14,11 +14,12 @@ import SmallCase from './MenuSection/SmallCase';
 import Research from './MenuSection/Research';
 import Exit from './MenuSection/Exit';
 import { BusinessNews } from './BusinessNews/BusinessNews';
-import {readMarketData,readMarketStatus} from '../../exports/FormatData';
+import {readMarketData,readMarketStatus,setChange} from '../../exports/FormatData';
 import {getCandleDuration} from '../../exports/MessageStructure';
 import {splitAdjustment} from '../../exports/SplitAdjustment';
 import {getFuturePoints,getStartPointIndex,filterBigData} from '../../exports/FutureEntries';
 import {convertToUNIX,dateToUNIX} from '../../exports/TimeConverter';
+import { setStockColor,getStockColor } from '../../exports/ChartColors';
 import '../../css/BusinessNews.css';
 import '../../css/MenuSection.css';
 import '../../css/CustomChartComponents.css';
@@ -28,7 +29,6 @@ import 'rsuite/dist/styles/rsuite-default.css';
 
 const REQUEST_BASE_URL = process.env.REACT_APP_REQUEST_BASE_URL;
 
-let updateInterval,bigdatainterval;
 
 
 class ScripsBody extends React.PureComponent
@@ -48,24 +48,28 @@ class ScripsBody extends React.PureComponent
             isLoaded : false,
             dataLoaded : false,
             bigdataLoaded : false,
+            limitFlag : false,
             range : 'D',
             endpoint : 'wss://masterswift-beta.mastertrust.co.in/hydrasocket/v2/websocket?access_token=qaoSOB-l4jmwXlxlucY4ZTKWsbecdrBfC7GoHjCRy8E.soJkcdbrMmew-w1C0_KZ2gcQBUPLlPTYNbt9WLJN2g8',
             ws : null,
-            FeedConnection : false
+            FeedConnection : false,
+            CompareStockConfig : [],
+            NewCompareStockConfig : {},
+            OldCompareStockConfig : {},
         }
 
         this.SnapShotRequest = this.SnapShotRequest.bind(this);
         this.setRange = this.setRange.bind(this);
-        this.appendRandomData = this.appendRandomData.bind(this);
+        this.compareStock = this.compareStock.bind(this);
+        this.toggleHide = this.toggleHide.bind(this);
+        this.removeStock = this.removeStock.bind(this);
+        // this.appendRandomData = this.appendRandomData.bind(this);
     }
 
     componentDidMount()
     {
-        let options = getCandleDuration(this.state.range);
         this.makeSocketConnection()
         .then(()=>{
-            this.loadChartData(this.state.range,options.candle,options.duration,options.mixed);
-            this.loadBigChartData('MAX',3,1,true);
             this.checkConnection();
             this.SnapShotRequest(this.state.stockDetails.stockSymbol,this.state.stockDetails.stockNSECode,this.state.stockDetails.stockBSECode,this.state.stockDetails.stockExchange.exchange);
         });
@@ -76,20 +80,16 @@ class ScripsBody extends React.PureComponent
     {
         if(prevProps.stockDetails.stockCode !== this.props.stockDetails.stockCode)
         {
-            let options = getCandleDuration(this.state.range);
-            console.log('props update : ',this.props.stockDetails.stockCode);
-            clearInterval(updateInterval);
-            clearInterval(bigdatainterval);
+            
             this.setState({
                 stockDetails : this.props.stockDetails,
                 oldStockDetails : this.state.stockDetails,
                 stockData : '',
                 chartdata : null,
                 bigchartdata : null,
-                isLoaded : false
+                isLoaded : false,
             },()=>{
-                this.loadChartData(this.state.range,options.candle,options.duration,options.mixed);
-                this.loadBigChartData('MAX',3,1,true);
+                
                 this.checkConnection();
                 this.SnapShotRequest(this.state.stockDetails.stockSymbol,this.state.stockDetails.stockNSECode,this.state.stockDetails.stockBSECode,this.state.stockDetails.stockExchange.exchange);
 
@@ -98,6 +98,7 @@ class ScripsBody extends React.PureComponent
         }
     }
 
+    /*<--- Live Data Feed Methods --->*/
     async makeSocketConnection()
     {
         return new Promise((resolve,reject)=>{
@@ -172,23 +173,44 @@ class ScripsBody extends React.PureComponent
             reader.onloadend = (event) => {
                 let data = new Uint8Array(reader.result);
                 // console.log(data);
-                if(this.state.stockData)
+
+               
+               
+
+                //get price change
+                if(response.data.size >= 86)
                 {
-                    convertedData = readMarketData(data,this.state.stockData.close_price);
+                    if(this.state.stockData)
+                    {
+                        convertedData = readMarketData(data,this.state.stockData['close_price']);
+                    }
+                    else
+                    {
+                        convertedData = readMarketData(data,-1);
+                    }
+    
+                    let livedata = convertedData.livedata;
+                    this.setState({
+                        stockData : livedata
+                    });
                 }
                 else
                 {
-                    convertedData = readMarketData(data,-1);
-                }
+                    console.log('---GET FROM DATABASE---');
+                    let livedata = this.state.stockData;
+                    let trade_price = this.state.stockData && this.state.stockData.last_traded_price;
+                    let open_price = this.state.stockData && this.state.stockData.open_price;
 
-                let livedata = convertedData.livedata;
+                    const {change_price,change_percentage} = setChange(trade_price,open_price);
 
-                //get price change
-                if(response.data.size === convertedData.size)
-                {
+                    // livedata
+                    livedata['change_price'] = change_price;
+                    livedata['change_percentage'] = change_percentage;
+                    console.log(change_price,change_percentage);
+                    console.log(livedata);
                     this.setState({
                         stockData : livedata
-                    })
+                    });
                 }
             }
         }
@@ -197,320 +219,29 @@ class ScripsBody extends React.PureComponent
 
     }
 
-    async loadChartData(type,ct,dd,mixed)   
+
+    
+
+    /*<--- Snap Shot Request Methods --->*/
+    SnapShotRequest(stockSymbol,stockNSECode,stockBSECode,stockExchange)
     {
 
-        this.setState({
-            dataLoaded : false,
-        })
+        console.log('SNAP SHOT')
 
-        let startUNIX = convertToUNIX(type);
-
-        let exchange = this.props.stockDetails.stockExchange.exchange;
-        let code;
-
-        if(exchange === 'NSE')
-        {
-            code = this.state.stockDetails.stockNSECode;
-        }
-        else if(exchange === 'BSE')
-        {
-            code = this.state.stockDetails.stockBSECode;
-        }
-
-        Axios.get(`http://${REQUEST_BASE_URL}:8000/stockdata`,{
-            params : {
-                'ct' : ct,
-                'starttime' : startUNIX,
-                'dd' : dd,
-                'exchange' : exchange,
-                'token' : this.state.stockDetails.stockCode,
-                'code' : code,
-                'mixed' : mixed,
-                'type' : type
+        Axios.get(`${REQUEST_BASE_URL}/detailed_view/snapshot/${stockSymbol}/${stockNSECode}/${stockBSECode}/${stockExchange}`,{ crossDomain: true }).then(({ data }) => {
+            console.log('data = ', data)
+            if (data.code === 900 || data.msg === 'success' && data.data) {
+                this.setState({ error: null, snapdata: data.data })
+            } else {
+                this.setState({  error: data.msg })
             }
+        }).catch(e => {
+            console.log(e.message);
+            this.setState({  error: e.message })
         })
-        .then(res=>{
-            const data = res.data;
-            // console.log(data);
-            if(data.status === 'success')
-            {
-                
-                let stockArray = data.data;
-                // console.log(stockArray);
-                let tempDataArray = [];
-                // console.log(stockArray);
-                stockArray.forEach(d =>{
-                    let dobj = {
-                        date : new Date(d[0]),
-                        open : parseFloat(d[1]),
-                        high : parseFloat(d[2]),
-                        low : parseFloat(d[3]),
-                        close : parseFloat(d[4]),
-                        volume : parseInt(d[5])
-                    }
+    }  
 
-                    tempDataArray.push(dobj);
-
-                });
-
-                // console.log(tempDataArray);
-
-                // tempDataArray = splitAdjustment(tempDataArray);
-
-                let lastPoint = tempDataArray[tempDataArray.length - 1];
-                let firstPoint = tempDataArray[0];
-                let startIndex = getStartPointIndex(tempDataArray,type,lastPoint,firstPoint);
-
-                // console.log(startIndex);
-
-                let futurePoints = getFuturePoints(lastPoint,type);
-                // console.log(futurePoints);
-                // mergedData = mergedData.concat(futurePoints);
-
-
-                this.setState({
-                    chartdata : tempDataArray,
-                    isLoaded : true,
-                    dataLoaded : true,
-                    chartProps : {
-                        chartdata : tempDataArray,
-                        extradata : futurePoints,
-                        lastPoint : lastPoint,
-                        startIndex : startIndex,
-                        extraPoints : futurePoints.length,
-                        range : type
-                    }
-                },()=>{
-                    this.updateChartData(type,ct,dd,mixed);
-                    // this.appendRandomData(type);
-                })
-            }
-
-            // console.log('chart data');
-
-            //make an interval to update data points
-            
-            
-        })
-    } 
-
-    async updateChartData(type,ct,dd,mixed)
-    {
-
-        updateInterval = setInterval(()=>{
-
-            let lastPoint = this.state.chartProps.lastPoint;
-            let startUNIX = dateToUNIX(lastPoint.date,type);
-
-            // console.log(lastPoint.date,lastPoint.open);
-
-            // console.log(startUNIX,type,ct,dd);
-
-            let exchange = this.props.stockDetails.stockExchange.exchange;
-            let code;
-
-            if(exchange === 'NSE')
-            {
-                code = this.state.stockDetails.stockNSECode;
-            }
-            else if(exchange === 'BSE')
-            {
-                code = this.state.stockDetails.stockBSECode;
-            }
-
-            // console.log(ct,dd);
-
-            Axios.get(`http://${REQUEST_BASE_URL}:8000/stockdata`,{
-                params : {
-                    'ct' : ct,
-                    'starttime' : startUNIX,
-                    'dd' : dd,
-                    'exchange' : exchange,
-                    'token' : this.state.stockDetails.stockCode,
-                    'code' : code,
-                    'mixed' : mixed,
-                    'type' : type
-                }
-            })
-            .then(res=>{
-                const data = res.data;
-                if(data.status === 'success')
-                {
-                    
-                    let stockArray = data.data;
-                    // console.log(stockArray);
-                    if(stockArray.length > 0)
-                    {
-                        let tempDataArray = this.state.chartProps.chartdata;
-                        // console.log(stockArray);
-                        stockArray.forEach(d =>{
-                            let dobj = {
-                                date : new Date(d[0]),
-                                open : parseFloat(d[1]),
-                                high : parseFloat(d[2]),
-                                low : parseFloat(d[3]),
-                                close : parseFloat(d[4]),
-                                volume : parseInt(d[5])
-                            }
-
-                            // console.log(dobj.date,dobj.open);
-
-                            tempDataArray.push(dobj);
-
-                        });
-
-                        // console.log(tempDataArray);
-                        let lastPoint = tempDataArray[tempDataArray.length - 1];
-                        // console.log(lastPoint);
-                        let firstPoint = tempDataArray[0];
-                        let startIndex = getStartPointIndex(tempDataArray,type,lastPoint,firstPoint);
-
-                        // console.log(startIndex);
-
-                        let futurePoints = getFuturePoints(lastPoint,type);
-                        // console.log(futurePoints);
-                        // mergedData = mergedData.concat(futurePoints);
-
-
-                        this.setState({
-                            chartdata : tempDataArray,
-                            isLoaded : true,
-                            dataLoaded : true,
-                            chartProps : {
-                                chartdata : tempDataArray,
-                                extradata : futurePoints,
-                                lastPoint : lastPoint,
-                                startIndex : startIndex,
-                                extraPoints : futurePoints.length,
-                                range : type
-                            }
-                        },()=>{
-                            // console.log('add new point')
-                        })
-                    }
-                    else
-                    {
-                        console.log('Wait');
-                    }
-                }
-
-                // console.log('chart data');
-
-                //make an interval to update data points
-                
-                
-            })
-        },5000)
-
-    }
-
-    loadBigChartData(type,ct,dd,mixed)
-    {
-        this.setState({
-            bigdataLoaded : false
-        })
-
-        let startUNIX = convertToUNIX(type);
-
-        console.log(startUNIX,type,ct,dd);
-
-        let exchange = this.props.stockDetails.stockExchange.exchange;
-        let code;
-
-        if(exchange === 'NSE')
-        {
-            code = this.state.stockDetails.stockNSECode;
-        }
-        else if(exchange === 'BSE')
-        {
-            code = this.state.stockDetails.stockBSECode;
-        }
-
-        Axios.get(`http://${REQUEST_BASE_URL}:8000/stockdata`,{
-            params : {
-                'ct' : ct,
-                'starttime' : startUNIX,
-                'dd' : dd,
-                'exchange' : exchange,
-                'token' : this.state.stockDetails.stockCode,
-                'code' : code,
-                'mixed' : mixed,
-                'type' : type
-            }
-        })
-        .then(res=>{
-            const data = res.data;
-            // console.log(data);
-            if(data.status === 'success')
-            {
-                
-                let stockArray = data.data;
-                // console.log(stockArray);
-                let tempDataArray = [];
-                // console.log(stockArray);
-                stockArray.forEach(d =>{
-                    let dobj = {
-                        date : new Date(d[0]),
-                        open : parseFloat(d[1]),
-                        high : parseFloat(d[2]),
-                        low : parseFloat(d[3]),
-                        close : parseFloat(d[4]),
-                        volume : parseInt(d[5])
-                    }
-
-                    tempDataArray.push(dobj);
-
-                });
-
-                // tempDataArray = splitAdjustment(tempDataArray);
-
-                this.setState({
-                    bigdataLoaded : true,
-                    bigchartdata : tempDataArray
-                },()=>{
-                    console.log('big data loaded ',tempDataArray.length)
-                })
-            }
-
-           
-            
-            
-        })
-    }
-
-    async loadBigChartConfig(type)
-    {
-        console.log('load big chart config');
-        
-        if(this.state.bigdataLoaded)
-        {
-            clearInterval(bigdatainterval);
-            let tempDataArray = this.state.bigchartdata;
-            let filteredData = filterBigData(tempDataArray,type);
-            console.log('big data loaded ');
-            console.log(filteredData.length);
-            let lastPoint = filteredData[filteredData.length - 1];
-            let firstPoint = filteredData[0];
-            let startIndex = getStartPointIndex(filteredData,type,lastPoint,firstPoint);
-            let futurePoints = getFuturePoints(lastPoint,type);
-            this.setState({
-                chartdata : filteredData,
-                isLoaded : true,
-                dataLoaded : true,
-                chartProps : {
-                    chartdata : filteredData,
-                    extradata : futurePoints,
-                    lastPoint : lastPoint,
-                    startIndex : startIndex,
-                    extraPoints : futurePoints.length,
-                    range : type
-                }
-            })
-        }
-        
-    }
-
+    /*<--- Other Supporting Methods --->*/
     isMarketOpen(ws)
     {
         //send market status request
@@ -541,21 +272,6 @@ class ScripsBody extends React.PureComponent
 
     }
 
-    SnapShotRequest(stockSymbol,stockNSECode,stockBSECode,stockExchange)
-    {
-        Axios.get(`http://${REQUEST_BASE_URL}:8000/detailed_view/snapshot/${stockSymbol}/${stockNSECode}/${stockBSECode}/${stockExchange}`,{ crossDomain: true }).then(({ data }) => {
-            console.log('data = ', data)
-            if (data.code === 900 || data.msg === 'success' && data.data) {
-                this.setState({ error: null, snapdata: data.data })
-            } else {
-                this.setState({  error: data.msg })
-            }
-        }).catch(e => {
-            console.log(e.message);
-            this.setState({  error: e.message })
-        })
-    }   
-
     openNews()
     {
         $('.business__news__section').css('transform','translateY(0%)');
@@ -568,76 +284,94 @@ class ScripsBody extends React.PureComponent
         $('.bn__close').removeClass('active');
     }
 
-    setRange(range,mixed)
+    setRange(range)
+    {   
+        this.setState({
+            range : range            
+        });
+    }
+
+    /*<--- Compare Functionality Methods --->*/
+    compareStock(code,name,symbol,company,exchange)
     {
-        let options = getCandleDuration(range);
-        console.log(options);
-        clearInterval(updateInterval);
-        if(range === '1Y' ||  range === '5Y' || range === 'MAX')
+        console.log('COMPARE ----> ',symbol,code)
+        let cc = this.state.CompareStockConfig;
+
+        if(cc.length === 5)
         {
             this.setState({
-                dataLoaded : false
+                limitFlag : !this.state.limitFlag
             });
-            bigdatainterval = setInterval(()=>{
-                this.loadBigChartConfig(range);
-            },1000);
         }
         else
         {
-            this.loadChartData(range,options.candle,options.duration,options.mixed)
-            .then(()=>{
+            if(cc.filter((c)=>{return c.symbol === symbol && c.code == code}).length === 0)
+            {
+                // let color = getStockColor();
+                let color = getStockColor();
+                let hide = false;
                 this.setState({
-                    range : range            
+                    CompareStockConfig : [...this.state.CompareStockConfig,{
+                    code,name,symbol,color,company,exchange,hide
+                    }],
+                    NewCompareStockConfig : {
+                    code,name,symbol,color,company,exchange,hide
+                    }
+                },()=>{
+                    console.log(this.state.CompareStockConfig);
+                    console.log(this.state.NewCompareStockConfig);
                 });
-            });
+            }
         }
-        
     }
 
-    appendRandomData = (type) => {
-        updateInterval = setInterval(() => {
-          
-          let lastPoint = this.state.chartProps.lastPoint;
-          console.log(lastPoint);
-          let newdate = lastPoint;
-          newdate.date.setTime(newdate.date.getTime() + (1*60*1000));
-          // console.log(newdate.date);
-          let dobj = {
-              date : newdate.date,
-              open : this.state.currentPrice,
-              high : parseFloat(lastPoint.high),
-              low : parseFloat(lastPoint.low),
-              close : parseFloat(lastPoint.close + this.randomInteger(2,-2)),
-              volume : parseInt(lastPoint.volume)
-          }
-          
-          // console.log(dobj);
-                  
-                      
-          let stockArray = this.state.chartProps.chartdata;
-          let futurePoints = getFuturePoints(type,lastPoint);
-          stockArray.push(dobj);
-          // console.log(stockArray);
-          if(stockArray.length > 0)
-          {
-                this.setState({
-                    chartProps : {
-                        chartdata : stockArray,
-                        extradata : futurePoints,
-                        lastPoint : lastPoint,
-                        startIndex : 0,
-                        extraPoints : futurePoints.length,
-                        range : type
-                    }
-                });
-                            
-            }
-        }, 10000);
-      };
+    toggleHide(e,symbol)
+    {
 
-      randomInteger(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-      }
+        console.log(symbol);
+        let CompareStockConfig = this.state.CompareStockConfig;
+        let indx = CompareStockConfig.findIndex((c)=> c.symbol === symbol);
+
+        console.log(indx);
+
+        if(indx !== -1)
+        {
+            // console.log(indx);
+            let TempConfig = [...CompareStockConfig];
+            TempConfig[indx] = {...TempConfig[indx],hide : !TempConfig[indx].hide};
+
+            console.log(TempConfig);
+
+            this.setState({
+                CompareStockConfig : TempConfig,
+            })
+        }
+    }
+
+    removeStock(e,symbol)
+    {
+        console.log(symbol);
+
+        let CompareStockConfig = this.state.CompareStockConfig;
+        let indx = CompareStockConfig.findIndex((c)=> c.symbol === symbol);
+        console.log(indx);
+        if(indx !== -1)
+        {
+            // console.log(indx);
+            let OldStock = CompareStockConfig[indx];
+            setStockColor(OldStock.color);
+            CompareStockConfig.splice(indx,1);
+            console.log('Old Stock : ',OldStock);
+            console.log(CompareStockConfig);
+
+            this.setState({
+                CompareStockConfig : CompareStockConfig,
+                OldCompareStockConfig : OldStock
+            })
+        }
+    }
+
+    
     
     render()
     {
@@ -646,7 +380,7 @@ class ScripsBody extends React.PureComponent
         let activeElement = this.props.active?.toLowerCase().replace(/ /g, '');
 
 
-        if(this.state.chartdata)
+        if(!this.state.chartdata)
         {
 
             return <div className="app__body">
@@ -701,15 +435,21 @@ class ScripsBody extends React.PureComponent
                     }
                     <div className="app__body__left">
                         <ChartContainer 
-                            data={this.state.chartProps.chartdata}
-                            extradata={this.state.chartProps.extradata} 
+                            // data={this.state.chartProps.chartdata}
+                            // extradata={this.state.chartProps.extradata} 
                             stockData={this.state.stockData} 
                             stockDetails={this.state.stockDetails}
-                            isLoaded={this.state.isLoaded}
                             dataLoaded={this.state.dataLoaded}
-                            chartProps={this.state.chartProps}
                             setRange={this.setRange}
                             range={this.state.range}
+                            compareStock={this.compareStock}
+                            toggleHide={this.toggleHide}
+                            removeStock={this.removeStock}
+                            CompareStockConfig={this.state.CompareStockConfig}
+                            NewCompareStockConfig={this.state.NewCompareStockConfig}
+                            OldCompareStockConfig={this.state.OldCompareStockConfig}
+                            limitFlag={this.state.limitFlag}
+
                         />
                         <StocksToWatch
                             stockISIN={this.state.stockDetails.stockISIN} 

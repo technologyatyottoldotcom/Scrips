@@ -46,6 +46,16 @@ export const readMarketData = (data,prevClose)=>
 
 }
 
+export const setChange = (lastPrice,OpenPrice)=>{
+    let changed_amount = convertIntoNumber(lastPrice)-convertIntoNumber(OpenPrice);
+    let change_price = convertIntoMoneyFormat(changed_amount);
+    let change_percentage = ((changed_amount/convertIntoNumber(OpenPrice))*100).toFixed(2)+'%';
+
+    return {
+        change_price,change_percentage
+    }
+}
+
 export const readMarketStatus = (data)=>{
     let exchange_code = parseInt(buf2hex(data.slice(1,2),16));
     let market_type_length = parseInt(buf2hex(data.slice(2,4),16))/100;

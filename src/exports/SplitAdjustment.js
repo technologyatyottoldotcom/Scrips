@@ -1,20 +1,16 @@
 
-let prices = [];
-let splitFactors = [];
-let modifiedPrices = [];
-
-
 function splitFactor(data,prices)
 {
+
+    let splitFactors = [];
     prices.forEach((p,i) => {
         if(i!== 0)
         {
             let DR = Math.round(Math.abs((prices[i]/prices[i-1]-1))*100,2);
-            console.log(DR);
             if(DR >= 40)
             {
-                console.log(prices[i],'R',i,' -----> ',Math.abs((prices[i]/prices[i-1]-1))*100);
-                console.log(parseFloat((prices[i]/prices[i-1]).toFixed(2)));
+                // console.log(prices[i],'R',i,' -----> ',Math.abs((prices[i]/prices[i-1]-1))*100);
+                // console.log(parseFloat((prices[i]/prices[i-1]).toFixed(2)));
 
                 splitFactors.push(parseFloat((prices[i]/prices[i-1]).toFixed(2)));
             }
@@ -29,14 +25,16 @@ function splitFactor(data,prices)
         }
     });
 
-    console.log(splitFactors.length);
-    console.log(prices.length);
+    // console.log(splitFactors.length);
+    // console.log(prices.length);
 
     return ModifiedPrice(data,prices,splitFactors);
 }
 
 function ModifiedPrice(data,prices,splitFactors)
 {
+
+    let modifiedPrices = [];
     if(prices.length === splitFactors.length)
     {
         prices.reverse();
@@ -67,14 +65,18 @@ function ModifiedPrice(data,prices,splitFactors)
 
 export function splitAdjustment(data)
 {
-    console.log('--SPLIT ADJUSTMENT--');
-    console.log(data.length);
+
+    let prices = [];
+    console.log(prices.length);
+    // console.log(data.length);
     data.forEach((d)=>{
         if(d.open)
         {
             prices.push(d.open);
         }
     });
+
+    // console.log(prices.length);
 
     return splitFactor(data,prices);
 }

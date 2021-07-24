@@ -4,6 +4,8 @@ import './css/App.css';
 import ScripsHeader from './components/Header/ScripsHeader';
 import ScripsBody from './components/Body/ScripsBody';
 import ScripsFooter from './components/Footer/ScripsFooter';
+import CompareLimitPopup from './components/Body/AppPopups/ComparePopup/CompareLimitPopup';
+import IndicatorLimitPopup from './components/Body/AppPopups/IndicatorPopup/IndicatorLimitPopup';
 
 
 class App extends React.Component
@@ -74,6 +76,12 @@ class App extends React.Component
     console.log(this.state.stockDetails);
     return (
       <div className="app">
+
+        <div className="app__back__blur"></div>
+
+        <CompareLimitPopup />
+        <IndicatorLimitPopup />
+
         <ScripsHeader 
           setActiveElement={this.setActiveElement} selectedStock={this.selectedStock}/>
         <ScripsBody 

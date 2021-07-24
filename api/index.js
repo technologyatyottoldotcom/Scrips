@@ -136,4 +136,4 @@ app.get('/stock/:query',(req,res)=>{
     })
 })
 
-app.listen(8000,e=>console.log('server start'))
+app.listen(9000,e=>console.log('server start'))

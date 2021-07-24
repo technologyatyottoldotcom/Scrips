@@ -1,12 +1,12 @@
 import React from 'react';
 import $ from 'jquery';
+import axios from 'axios';
 import ChartClock from './ChartClock';
 import AnimatedDigit from './AnimatedDigit';
 import StockChart from './StockChart';
-import StockCompare from './StockCompare';
-import Indicator from './Indicator';
-import IndicatorInfo from './IndicatorInfo';
 import Interactive from './Interactive';
+import ComparePopup from './AppPopups/ComparePopup/ComparePopup';
+import IndicatorPopup from './AppPopups/IndicatorPopup/IndicatorPopup';
 import Zoom from '../../assets/icons/zoom.svg';
 import Compare from '../../assets/icons/compare.svg';
 import IndicatorIcon from '../../assets/icons/indicator.svg';
@@ -32,14 +32,15 @@ import InfiniteLine from '../../assets/icons/infiniteline.svg';
 import Ray from '../../assets/icons/ray.svg';
 import FibRet from '../../assets/icons/fibonacciretracement.svg';
 import GannFan from '../../assets/icons/gannfan.svg';
-import { timeParse } from "d3-time-format";
-import MSFTArray from '../../data/MSFT';
-import IBMArray from '../../data/IBM';
-import ORCLArray from '../../data/ORCL';
-import CSCOArray from '../../data/CSCO';
 import Spinner from '../Loader/Spinner';
+import Pulse from '../Loader/Pulse';
+import {getCandleDuration} from '../../exports/MessageStructure';
+import {getFuturePoints,getStartPointIndex,filterBigData} from '../../exports/FutureEntries';
+import {convertToUNIX,dateToUNIX} from '../../exports/TimeConverter';
+import Technicals from './BusinessNews/Technicals';
 
-
+const REQUEST_BASE_URL = process.env.REACT_APP_REQUEST_BASE_URL;
+let updateInterval,bigdatainterval;
 
 export class ChartContainer extends React.PureComponent {
 
@@ -48,22 +49,31 @@ export class ChartContainer extends React.PureComponent {
     {
         super(props);
         this.setInitialSize = this.setInitialSize.bind(this);
-        this.OpenIndicatorInfo = this.OpenIndicatorInfo.bind(this);
-        this.CloseIndicatorInfo = this.CloseIndicatorInfo.bind(this);
-        this.changeIndicatorType = this.changeIndicatorType.bind(this);
-        this.addStockData = this.addStockData.bind(this);
+        this.CloseComparePopup = this.CloseComparePopup.bind(this);
+        this.CloseIndicatorPopup = this.CloseIndicatorPopup.bind(this);
+        this.ChangeIndicatorType = this.ChangeIndicatorType.bind(this);
+        this.addCompareData = this.addCompareData.bind(this);
+        this.removeCompareData = this.removeCompareData.bind(this);
+        this.DeleteIndicatorType = this.DeleteIndicatorType.bind(this);
+        this.SwapCharts = this.SwapCharts.bind(this);
         this.state = {
+            isLoaded : false,
+            dataLoaded : false,
+            bigdataLoaded : true,
             chartTypeOpen : false,
             indicatorOpen : false,
             compareOpen : false,
             interactiveOpen : false,
             indicatorInfoOpen : false,
+            comparedataLoaded : true,
+            bigcomparedataLoaded : true,
+            RemoveFlag : false,
             chartType : 'line',
-            chartData : [],
-            chartDataTemp : [],
-            compareStockArray : [],
+            chartdata : [],
             TotalCharts : 1,
+            TotalSwapCharts : 0,
             IndicatorChartTypeArray : [],
+            OldIndicator : {},
             indicatorInfoType : '',
             indicatorType : 'none',
             chartWidth : 0,
@@ -73,92 +83,764 @@ export class ChartContainer extends React.PureComponent {
             chartTypeIcon : Line,
             interactiveType : 'line',
             trendLineType : 'none',
+            
         }
     }
 
     componentDidMount()
     {
+
+        console.log("MOUNT");
+        let options = getCandleDuration(this.state.range);
+        this.loadChartData(this.state.range,options.candle,options.duration,options.mixed);
         this.setInitialSize();
-        this.loadData();
+        this.loadBigChartData('MAX',3,1,true);
     }
 
-    async loadData()
+    componentDidUpdate(prevProps)
+    {
+        // console.log('--update--',prevProps.NewCompareStockConfig,this.props.NewCompareStockConfig);
+
+        if(this.props.NewCompareStockConfig.symbol !== prevProps.NewCompareStockConfig.symbol && this.props.NewCompareStockConfig.code !== prevProps.NewCompareStockConfig.code)
+        {
+            console.log('ADD COMPARE DATA');
+            this.setState({
+                comparedataLoaded : false,
+                bigcomparedataLoaded : false,
+            },()=>{
+                console.log('LOAD COMPARE DATA')
+                let options = getCandleDuration(this.state.range);
+                this.addCompareData(this.state.range,options.candle,options.duration,options.mixed);
+                this.loadBigCompareChartData('MAX',3,1,true);
+            })
+        }
+
+        if(this.props.OldCompareStockConfig.symbol !== prevProps.OldCompareStockConfig.symbol && this.props.OldCompareStockConfig.color !== prevProps.OldCompareStockConfig.color)
+        {
+            console.log('REMOVE COMPARE DATA ',this.props.OldCompareStockConfig.symbol);
+            this.removeCompareData(this.props.OldCompareStockConfig.symbol);
+        }
+
+        if(prevProps.stockDetails.stockCode !== this.props.stockDetails.stockCode)
+        {
+            let options = getCandleDuration(this.state.range);
+            console.log('props update : ',this.props.stockDetails.stockCode);
+            clearInterval(updateInterval);
+            clearInterval(bigdatainterval);
+
+            this.setState({
+                chartdata : null,
+                bigchartdata : null
+            },()=>{
+                this.loadBigChartData('MAX',3,1,true);
+                // this.loadChartData(this.state.range,options.candle,options.duration,options.mixed);
+                this.changeRange('D');
+            });
+        }
+
+        if(this.props.limitFlag !== prevProps.limitFlag)
+        {
+            this.compareLimitReached();
+        }
+
+        
+
+       
+    }
+
+    /*<--- Chart Data Loading Methods --->*/
+    async loadChartData(type,ct,dd,mixed)   
     {
 
-        let tempDataArray = [];
-        const parseDate = timeParse('%Y-%m-%d');
-        MSFTArray.forEach(d =>{
-            let dobj = {
-                date : parseDate(d[0]),
-                open : parseFloat(d[1]),
-                high : parseFloat(d[2]),
-                low : parseFloat(d[3]),
-                close : parseFloat(d[4]),
-                volume : parseInt(d[5])
+        this.setState({
+            dataLoaded : false,
+        })
+
+        let startUNIX = convertToUNIX(type);
+
+        let exchange = this.props.stockDetails.stockExchange.exchange;
+        let code;
+
+        if(exchange === 'NSE')
+        {
+            code = this.props.stockDetails.stockNSECode;
+        }
+        else if(exchange === 'BSE')
+        {
+            code = this.props.stockDetails.stockBSECode;
+        }
+
+        axios.get(`${REQUEST_BASE_URL}/stockdata`,{
+            params : {
+                'ct' : ct,
+                'starttime' : startUNIX,
+                'dd' : dd,
+                'exchange' : exchange,
+                'token' : this.props.stockDetails.stockCode,
+                'code' : code,
+                'mixed' : mixed,
+                'type' : type
+            }
+        })
+        .then(res=>{
+            const data = res.data;
+            // console.log(data);
+            if(data.status === 'success')
+            {
+                
+                let stockArray = data.data;
+                // console.log(stockArray);
+                let tempDataArray = [];
+                // console.log(stockArray);
+                stockArray.forEach(d =>{
+                    let dobj = {
+                        date : new Date(d[0]),
+                        open : parseFloat(d[1]),
+                        high : parseFloat(d[2]),
+                        low : parseFloat(d[3]),
+                        close : parseFloat(d[4]),
+                        volume : parseInt(d[5])
+                    }
+
+                    tempDataArray.push(dobj);
+
+                });
+
+                // console.log(tempDataArray);
+
+                // tempDataArray = splitAdjustment(tempDataArray);
+
+                let lastPoint = tempDataArray[tempDataArray.length - 1];
+                let firstPoint = tempDataArray[0];
+                let startIndex = getStartPointIndex(tempDataArray,type,lastPoint,firstPoint);
+
+                // console.log(startIndex);
+
+                let futurePoints = getFuturePoints(lastPoint,type);
+                // console.log(futurePoints);
+                // mergedData = mergedData.concat(futurePoints);
+
+
+                this.setState({
+                    chartProps : {
+                        chartdata : tempDataArray,
+                        extradata : futurePoints,
+                        lastPoint : lastPoint,
+                        startIndex : startIndex,
+                        extraPoints : futurePoints.length,
+                        range : type
+                    },
+                    chartdata : tempDataArray,
+                    isLoaded : true,
+                    dataLoaded : true,
+                    
+                },()=>{
+                    console.log(this.state.chartProps,this.state.dataLoaded);
+                    this.loadCompareData();
+                    this.updateChartData(type,ct,dd,mixed);
+                    // this.appendRandomData(type);
+                })
             }
 
-            tempDataArray.push(dobj);
+            // console.log('chart data');
 
-        });
+            //make an interval to update data points
+            
+            
+        })
+    } 
 
-        // console.log(tempDataArray);
+    async updateChartData(type,ct,dd,mixed)
+    {
 
+        updateInterval = setInterval(()=>{
+
+            let lastPoint = this.state.chartProps.lastPoint;
+            let startUNIX = dateToUNIX(lastPoint.date,type);
+
+            console.log(lastPoint.date);
+
+            // console.log(startUNIX,type,ct,dd);
+
+            let exchange = this.props.stockDetails.stockExchange.exchange;
+            let code;
+
+            if(exchange === 'NSE')
+            {
+                code = this.props.stockDetails.stockNSECode;
+            }
+            else if(exchange === 'BSE')
+            {
+                code = this.props.stockDetails.stockBSECode;
+            }
+
+            // console.log(ct,dd);
+
+            axios.get(`${REQUEST_BASE_URL}/stockdata`,{
+                params : {
+                    'ct' : ct,
+                    'starttime' : startUNIX,
+                    'dd' : dd,
+                    'exchange' : exchange,
+                    'token' : this.props.stockDetails.stockCode,
+                    'code' : code,
+                    'mixed' : mixed,
+                    'type' : type
+                }
+            })
+            .then(res=>{
+                const data = res.data;
+                if(data.status === 'success')
+                {
+                    
+                    let stockArray = data.data;
+                    console.log(stockArray.length);
+                    if(stockArray.length > 0)
+                    {
+                        let tempDataArray = this.state.chartProps.chartdata;
+                        // console.log(stockArray);
+                        stockArray.forEach(d =>{
+                            let dobj = {
+                                date : new Date(d[0]),
+                                open : parseFloat(d[1]),
+                                high : parseFloat(d[2]),
+                                low : parseFloat(d[3]),
+                                close : parseFloat(d[4]),
+                                volume : parseInt(d[5])
+                            }
+
+                            // console.log(dobj.date,dobj.open);
+
+                            tempDataArray.push(dobj);
+
+                        });
+
+                        // console.log(tempDataArray);
+                        let lastPoint = tempDataArray[tempDataArray.length - 1];
+                        // console.log(lastPoint);
+                        let firstPoint = tempDataArray[0];
+                        let startIndex = getStartPointIndex(tempDataArray,type,lastPoint,firstPoint);
+
+                        // console.log(startIndex);
+
+                        let futurePoints = getFuturePoints(lastPoint,type);
+                        console.log(futurePoints.length);
+                        // mergedData = mergedData.concat(futurePoints);
+
+
+                        this.setState({
+                            chartdata : tempDataArray,
+                            isLoaded : true,
+                            dataLoaded : true,
+                            chartProps : {
+                                unixtime : startUNIX,
+                                chartdata : tempDataArray,
+                                extradata : futurePoints,
+                                lastPoint : lastPoint,
+                                startIndex : startIndex,
+                                extraPoints : futurePoints.length,
+                                range : type
+                            }
+                        },()=>{
+                            // console.log('add new point')
+                            // this.updateCompareData(startUNIX);
+                        })
+                    }
+                    else
+                    {
+                        // console.log('Wait');
+                    }
+
+                }
+
+                // console.log('chart data');
+
+                //make an interval to update data points
+
+                
+                
+            });
+
+            this.updateCompareData();
+
+        },5000)
+
+    }
+
+    async updateCompareData()
+    {
+        let CompareStockConfig = this.props.CompareStockConfig;
+
+        let unixtime = this.state.chartProps.unixtime;
+
+        if(CompareStockConfig.length > 0)
+        {
+            // console.log('ADD WITH COMPARE DATA'); 
+            const type = this.state.range;
+            const {candle,duration,mixed} = getCandleDuration(type);
+            // console.log(candle,duration,mixed);
+            // console.log(unixtime);
+            // console.log(this.state.chartProps.lastPoint);
+
+            const Stocks = this.props.CompareStockConfig;
+
+            const requests = Stocks.map( s=> axios.get(`http://localhost:9000/stockdata?ct=${candle}&starttime=${unixtime}&dd=${duration}&exchange=${s.exchange.exchange}&token=${s.code}&code=${s.symbol}&mixed=${mixed}&type=${type}`).catch(err => null))
+
+            // console.log(requests);
+
+            let chartdata = this.state.chartdata;
+            let lastPoint;
+
+            let added = false;
+
+            axios.all(requests)
+            .then(axios.spread((...response)=>{
+                response.forEach((r)=>{
+                    // console.log(r.data);
+                if(r.data.status === 'success' && r.data.data.length>0)
+                {
+                    // console.log(r.data.data.length);
+                    //    console.log(r);
+                    let stockArray = r.data.data;
+
+                    let code = r.data.params.code;
+
+                    let indx = chartdata.length - 1;
+
+                    stockArray.reverse().forEach((d,i) =>{
+
+                            let dobj = {};
+                            dobj[code+'date'] = new Date(d[0]); 
+                            dobj[code+'open'] = parseFloat(d[1]);
+                            dobj[code+'high'] = parseFloat(d[2]);
+                            dobj[code+'low'] = parseFloat(d[3]);
+                            dobj[code+'close'] = parseFloat(d[4]);
+                            dobj[code+'volume'] = parseFloat(d[5]);
+                            
+                            chartdata[indx] = {...chartdata[indx],...dobj};
+                            indx-=1;
+
+                            // console.log(code,dobj[code+'date']);
+                        }); 
+
+
+                        lastPoint = chartdata[chartdata.length - 1];
+
+                        // console.log(lastPoint)
+
+                        added = true;
+
+                    }
+                })
+            }))
+            .then(()=>{
+                if(added)
+                {
+                    this.setState({
+                        chartProps : {
+                            ...this.state.chartProps,
+                            chartdata : chartdata,
+                            lastPoint : lastPoint,
+                        },
+                        chartdata : chartdata
+                    },()=>{
+                        // console.log('DONEEEEEE -------------> ',this.state.chartdata[0],this.state.chartdata[this.state.chartdata.length-1]);
+                    }); 
+                }
+                // console.log('DONEEEEE')
+            })   
+        }
+    }
+
+    loadBigChartData(type,ct,dd,mixed)
+    {
+        
+        console.log('LOAD BIG CHART DATA');
         this.setState({
-            chartData : tempDataArray,
-            chartDataTemp : tempDataArray
-        });
+            bigdataLoaded : false
+        })
+
+        let startUNIX = convertToUNIX(type);
+
+        console.log(startUNIX,type,ct,dd);
+
+        let exchange = this.props.stockDetails.stockExchange.exchange;
+        let code;
+
+        if(exchange === 'NSE')
+        {
+            code = this.props.stockDetails.stockNSECode;
+        }
+        else if(exchange === 'BSE')
+        {
+            code = this.props.stockDetails.stockBSECode;
+        }
+
+        axios.get(`${REQUEST_BASE_URL}/stockdata`,{
+            params : {
+                'ct' : ct,
+                'starttime' : startUNIX,
+                'dd' : dd,
+                'exchange' : exchange,
+                'token' : this.props.stockDetails.stockCode,
+                'code' : code,
+                'mixed' : mixed,
+                'type' : type
+            }
+        })
+        .then(res=>{
+            const data = res.data;
+            // console.log(data);
+            if(data.status === 'success')
+            {
+                
+                let stockArray = data.data;
+                // console.log(stockArray);
+                let tempDataArray = [];
+                // console.log(stockArray);
+                stockArray.forEach(d =>{
+                    let dobj = {
+                        date : new Date(d[0]),
+                        open : parseFloat(d[1]),
+                        high : parseFloat(d[2]),
+                        low : parseFloat(d[3]),
+                        close : parseFloat(d[4]),
+                        volume : parseInt(d[5])
+                    }
+
+                    // console.log(d,dobj);
+
+                    tempDataArray.push(dobj);
+
+                });
+
+                console.log(tempDataArray);
+
+                this.setState({
+                    bigdataLoaded : true,
+                    bigchartdata : tempDataArray
+                },()=>{
+                    console.log('big data loaded ',tempDataArray[tempDataArray.length - 1]);
+                })
+            }
+
+           
+            
+            
+        })
+    }
+
+    async loadBigChartConfig(type)
+    {
+        console.log('load big chart config');
+        
+        if(this.state.bigdataLoaded)
+        {
+            clearInterval(bigdatainterval);
+            let tempDataArray = this.state.bigchartdata;
+            let filteredData = filterBigData(tempDataArray,type);
+            console.log('big data loaded ');
+            console.log(filteredData.length);
+            let lastPoint = filteredData[filteredData.length - 1];
+            let firstPoint = filteredData[0];
+            let startIndex = getStartPointIndex(filteredData,type,lastPoint,firstPoint);
+            let futurePoints = getFuturePoints(lastPoint,type);
+            this.setState({
+                chartdata : filteredData,
+                isLoaded : true,
+                dataLoaded : true,
+                chartProps : {
+                    chartdata : filteredData,
+                    extradata : futurePoints,
+                    lastPoint : lastPoint,
+                    startIndex : startIndex,
+                    extraPoints : futurePoints.length,
+                    range : type
+                }
+            })
+        }
+        
+    }
+
+    async addCompareData(type,ct,dd,mixed)
+    {
+        let startUNIX = convertToUNIX(type);
+        // console.log(startUNIX);
+        axios.get(`http://localhost:9000/stockdata`,{
+          params : {
+            'ct' : ct,
+            'starttime' : startUNIX,
+            'dd' : dd,
+            'exchange' : this.props.NewCompareStockConfig.exchange.exchange,
+            'token' : parseInt(this.props.NewCompareStockConfig.code),
+            'code' : this.props.NewCompareStockConfig.symbol,
+            'mixed' : mixed,
+            'type' : type
+          }
+        })
+        .then(res=>{
+            // console.log(res.data);
+            const data = res.data;
+            if(data.status === 'success')
+            {
+                let code = this.props.NewCompareStockConfig.symbol;
+                let stockArray = data.data;
+                let chartdata = this.state.chartdata;
+                let indx = chartdata.length - 1;
+                let dobj = {};
+                // console.log(stockArray);
+                stockArray.reverse().forEach(d =>{
+
+                    // let csd = this.state.chartdata[indx].csd;
+                    // console.log(csd);
+                    dobj = {};
+                    // dobj['code'] = code; 
+                    dobj[code+'open'] = parseFloat(d[1]);
+                    dobj[code+'high'] = parseFloat(d[2]);
+                    dobj[code+'low'] = parseFloat(d[3]);
+                    dobj[code+'close'] = parseFloat(d[4]);
+                    dobj[code+'volume'] = parseFloat(d[5]);
+
+                    // csd.push(dobj);
+
+                    // console.log(csd)
+                    chartdata[indx] = {...chartdata[indx],...dobj};
+
+                    // chartdata[indx] = {...chartdata[indx],...csd};
+                    indx-=1;
+        
+                });
+    
+                console.log(chartdata);
+                // console.log(this.state.lastPoint);
+                let lastPoint = chartdata[chartdata.length - 1];
+                console.log(lastPoint);
+
+                this.setState({
+                    chartProps : {
+                        ...this.state.chartProps,
+                        chartdata : chartdata,
+                        lastPoint : lastPoint,
+                    },
+                    chartdata : chartdata,
+                    comparedataLoaded : true
+                })
+
+            }
+            
+        })
+    }
+
+    loadBigCompareChartData(type,ct,dd,mixed)
+    {
+        
+        console.log('LOAD BIG COMPARE CHART DATA');
+
+        let startUNIX = convertToUNIX(type);
+
+        axios.get(`http://localhost:9000/stockdata`,{
+          params : {
+            'ct' : ct,
+            'starttime' : startUNIX,
+            'dd' : dd,
+            'exchange' : this.props.NewCompareStockConfig.exchange.exchange,
+            'token' : parseInt(this.props.NewCompareStockConfig.code),
+            'code' : this.props.NewCompareStockConfig.symbol,
+            'mixed' : mixed,
+            'type' : type
+          }
+        })
+        .then(res=>{
+            const data = res.data;
+            // console.log(data);
+            if(data.status === 'success')
+            {
+                
+                let code = this.props.NewCompareStockConfig.symbol;
+                let stockArray = data.data;
+                let bigchartdata = this.state.bigchartdata;
+                let indx = bigchartdata.length - 1;
+                let dobj = {};
+                // console.log(stockArray);
+                stockArray.reverse().forEach(d =>{
+
+                    // let csd = this.state.chartdata[indx].csd;
+                    // console.log(csd);
+                    dobj = {};
+                    // dobj['code'] = code; 
+                    dobj[code+'open'] = parseFloat(d[1]);
+                    dobj[code+'high'] = parseFloat(d[2]);
+                    dobj[code+'low'] = parseFloat(d[3]);
+                    dobj[code+'close'] = parseFloat(d[4]);
+                    dobj[code+'volume'] = parseFloat(d[5]);
+
+                    // csd.push(dobj);
+
+                    // console.log(csd)
+                    bigchartdata[indx] = {...bigchartdata[indx],...dobj};
+
+                    // chartdata[indx] = {...chartdata[indx],...csd};
+                    indx-=1;
+        
+                });
+
+                console.log('BIG DATA LOADED ',bigchartdata[bigchartdata.length - 1]);
+
+
+                this.setState({
+                    bigchartdata : bigchartdata,
+                    bigcomparedataLoaded : true
+                },()=>{
+                    console.log('BIG DATA LOADED ',bigchartdata[bigchartdata.length - 1]);
+                })
+            }
+
+           
+            
+            
+        })
+    }
+
+    async loadCompareData()
+    {
+
+        
+        let CompareStockConfig = this.props.CompareStockConfig;
+        if(CompareStockConfig.length > 0)
+        {
+            this.setState({
+                comparedataLoaded : false
+            });
+            console.log('ADD WITH COMPARE DATA'); 
+            const type = this.state.range;
+            const {candle,duration,mixed} = getCandleDuration(type);
+            console.log(candle,duration,mixed);
+            let startUNIX = convertToUNIX(type);
+            console.log(startUNIX);
+
+            const Stocks = this.props.CompareStockConfig;
+
+            const requests = Stocks.map( s=> axios.get(`http://localhost:9000/stockdata?ct=${candle}&starttime=${startUNIX}&dd=${duration}&exchange=NSE&token=${s.code}&code=${s.symbol}&mixed=${mixed}&type=${type}`).catch(err => null))
+
+            console.log(requests);
+
+            let chartdata = this.state.chartdata;
+            let lastPoint;
+
+
+            axios.all(requests)
+            .then(axios.spread((...response)=>{
+                response.forEach((r)=>{
+                    // console.log(r.data);
+                if(r.data.status === 'success')
+                {
+                    console.log(r.data.data.length);
+                    //    console.log(r);
+                    let stockArray = r.data.data;
+
+                    let code = r.data.params.code;
+
+                    let indx = chartdata.length - 1;
+
+                    stockArray.reverse().forEach((d,i) =>{
+
+                            let dobj = {};
+                            dobj[code+'date'] = new Date(d[0]); 
+                            dobj[code+'open'] = parseFloat(d[1]);
+                            dobj[code+'high'] = parseFloat(d[2]);
+                            dobj[code+'low'] = parseFloat(d[3]);
+                            dobj[code+'close'] = parseFloat(d[4]);
+                            dobj[code+'volume'] = parseFloat(d[5]);
+                            
+                            chartdata[indx] = {...chartdata[indx],...dobj};
+                            indx-=1;
+                        }); 
+
+
+                        lastPoint = chartdata[chartdata.length - 1];
+
+                        console.log(lastPoint)
+
+                    }
+                })
+            }))
+            .then(()=>{
+                this.setState({
+                    chartProps : {
+                        ...this.state.chartProps,
+                        chartdata : chartdata,
+                        lastPoint : lastPoint,
+                    },
+                    chartdata : chartdata,
+                    comparedataLoaded : true
+                },()=>{
+                    console.log('DONEEEEEE -------------> ',this.state.chartdata[0]);
+                }); 
+                // console.log('DONEEEEE')
+            })
+
+           
+
+             
+        }
+
+        
+    }
+
+    async removeCompareData(symbol)
+    {
+
+        // console.log(this.state.lastPoint); 
+        console.log('REMOVE FLAG : ',this.state.RemoveFlag) ;
+
+        let chartdata = this.state.chartdata;
+        console.log(symbol);
+        if(chartdata)
+        {
+            chartdata.forEach((d)=>{
+                delete d[symbol];
+                delete d[symbol+'open'];
+                delete d[symbol+'high'];
+                delete d[symbol+'low'];
+                delete d[symbol+'close'];
+                delete d[symbol+'volume'];
+            });
+
+            console.log('REMOVED')
+
+            // console.log(this.state.lastPoint);   
+
+            let lastPoint = chartdata[chartdata.length - 1];
+
+            console.log(lastPoint);
+            
+
+            this.setState({
+                chartProps : {
+                    ...this.state.chartProps,
+                    chartdata : chartdata,
+                    lastPoint : lastPoint,
+                },
+                chartdata : chartdata,
+                RemoveFlag : !this.state.RemoveFlag
+            },()=>{
+                console.log(this.state.chartdata[this.state.chartdata.length - 1]);
+                console.log('REMOVE FLAG : ',this.state.RemoveFlag) ;
+
+            });
+        }
     }
 
     setInitialSize()
     {
         let wd = $('.stock__chart').width();
         let ht = $('.stock__chart').height();
+        // console.log($('.stock__chart'));
         this.setState({
             chartWidth : wd,
             chartHeight : ht,
         });
-    }
-
-    addStockData(stock)
-    {
-
-        let objCName = stock+'Close';
-        let stockArray = [];
-        let tempDataArray = [];
-
-        if(stock === 'IBM')
-        {
-            stockArray = IBMArray;
-        }
-        else if(stock === 'ORCL')
-        {
-            stockArray = ORCLArray;
-        }
-        else if(stock === 'CSCO')
-        {
-            stockArray = CSCOArray;
-        }
-
-        let baseArray = this.state.chartData;
-
-        baseArray.forEach((d,index) => {
-
-            let dobj = {
-                date : d['date'],
-                open : d['open'],
-                high : d['high'],
-                low : d['low'],
-                close : d['close'],
-                volume : d['volume'],
-            }
-            dobj[objCName] = parseFloat(stockArray[index][4]) 
-
-            tempDataArray.push(dobj);
-        });
-
-        // this.setState({
-        //     chartDataTemp : tempDataArray
-        // });
+        // console.log(wd,ht);
     }
 
     changeChart(type)
@@ -219,23 +901,99 @@ export class ChartContainer extends React.PureComponent {
         $('.stock__chart__types>div[data-chart="'+type+'"]').addClass('active');
     }
 
-    changeRange(type)
+    changeRange(range)
     {
+        clearInterval(updateInterval);
+        clearInterval(bigdatainterval);
+        let options = getCandleDuration(range);
+        console.log(options);
         this.setState({
-            range : type
+            range : range
         });
-        this.props.setRange(type);
+        if(range === '1Y' ||  range === '5Y' || range === 'MAX')
+        {
+            this.setState({
+                dataLoaded : false
+            });
+            bigdatainterval = setInterval(()=>{
+                this.loadBigChartConfig(range);
+            },1000);
+        }
+        else
+        {
+            this.loadChartData(range,options.candle,options.duration,options.mixed)
+            .then(()=>{
+                this.setState({
+                    range : range            
+                });
+            });
+        }
+        this.props.setRange(range);
         $('.chart__range>div').removeClass('active__range');
-        $('.chart__range>div[data-range="'+type+'"]').addClass('active__range');
+        $('.chart__range>div[data-range="'+range+'"]').addClass('active__range');
     }
 
-    changeIndicatorType(type)
+    ChangeIndicatorType(type)
     {
+        console.log('INDICATOR TYPE ',type);
+        if(this.state.TotalCharts <= 3)
+        {
+            this.setState({
+                indicatorType : type,
+                TotalCharts : this.state.TotalCharts+1,
+                IndicatorChartTypeArray : [...this.state.IndicatorChartTypeArray,type]
+            },()=>{
+                console.log(this.state.IndicatorChartTypeArray)
+            });
+        }
+        else
+        {
+            this.indicatorLimitReached();
+        }
+    }
+
+    DeleteIndicatorType(type)
+    {
+        let IndicatorChartTypeArray = this.state.IndicatorChartTypeArray;
+        let indx = IndicatorChartTypeArray.findIndex((c)=> c === type);
+        // console.log(indx);
+
+        if(indx !== -1)
+        {
+            let OldIndicator = IndicatorChartTypeArray[indx];
+            IndicatorChartTypeArray.splice(indx,1);
+            console.log(IndicatorChartTypeArray);
+            this.setState({
+                OldIndicator,
+                IndicatorChartTypeArray,
+                TotalCharts : this.state.TotalCharts-1,
+            });
+        }
+    }
+
+    SwapCharts(action,indx)
+    {
+        let IndicatorChartTypeArray = this.state.IndicatorChartTypeArray;
+        let cindx;
+        if(action === 'up')
+        {
+            cindx = indx - 1;
+        }
+        else
+        {
+            cindx = indx + 1;
+        }
+
+        console.log(indx,cindx);
+
+        [IndicatorChartTypeArray[indx],IndicatorChartTypeArray[cindx]] = [IndicatorChartTypeArray[cindx],IndicatorChartTypeArray[indx]];
+
+        console.log(IndicatorChartTypeArray);
         this.setState({
-            indicatorType : type,
-            TotalCharts : this.state.TotalCharts+1,
-            IndicatorChartTypeArray : [...this.state.IndicatorChartTypeArray,type]
+            IndicatorChartTypeArray,
+            TotalSwapCharts : this.state.TotalSwapCharts + 1
         });
+
     }
 
     ToggleChartType()
@@ -263,6 +1021,7 @@ export class ChartContainer extends React.PureComponent {
             $('.Indicator__popup').addClass('active');
             $('.Compare__popup').removeClass('active');
             $('.Interactive__popup').removeClass('active');
+            $('.app__back__blur').addClass('active');
             this.setState({
                 indicatorOpen : true,
                 compareOpen : false,
@@ -273,39 +1032,18 @@ export class ChartContainer extends React.PureComponent {
 
     CloseIndicatorPopup()
     {
+        console.log('CLOSE')
         if(this.state.indicatorOpen)
         {
             $('.Indicator__popup').removeClass('active');
+            $('.app__back__blur').removeClass('active');
             this.setState({
                 indicatorOpen : false
             });
         } 
     }
 
-    OpenIndicatorInfo(type)
-    {
-        console.log('open info',type);
-        if(!this.state.indicatorInfoOpen)
-        {
-            $('.Indicator__info').addClass('active');
-            this.setState({
-                indicatorInfoOpen : true,
-                indicatorInfoType : type
-            });
-        }
-    }
-
-    CloseIndicatorInfo()
-    {
-        // console.log('open info');
-        if(this.state.indicatorInfoOpen)
-        {
-            $('.Indicator__info').removeClass('active');
-            this.setState({
-                indicatorInfoOpen : false
-            });
-        }
-    }
+    
 
     OpenComparePopup()
     {
@@ -314,6 +1052,7 @@ export class ChartContainer extends React.PureComponent {
             $('.Compare__popup').addClass('active');
             $('.Interactive__popup').removeClass('active');
             $('.Indicator__popup').removeClass('active');
+            $('.app__back__blur').addClass('active');
 
             this.setState({
                 compareOpen : true,
@@ -325,9 +1064,11 @@ export class ChartContainer extends React.PureComponent {
 
     CloseComparePopup()
     {
+        console.log('close');
         if(this.state.compareOpen)
         {
             $('.Compare__popup').removeClass('active');
+            $('.app__back__blur').removeClass('active');
             this.setState({
                 compareOpen : false
             });
@@ -443,6 +1184,20 @@ export class ChartContainer extends React.PureComponent {
         
     }
 
+    compareLimitReached()
+    {
+        this.CloseComparePopup();
+        $('.app__back__blur').addClass('active');
+        $('.compare__limit__popup').addClass('active');
+    }
+
+    indicatorLimitReached()
+    {
+        this.CloseIndicatorPopup();
+        $('.app__back__blur').addClass('active');
+        $('.indicator__limit__popup').addClass('active');
+    }
+
     render() {
 
         // console.log('Rendering chart...');
@@ -464,63 +1219,24 @@ export class ChartContainer extends React.PureComponent {
 
         let stockName = this.props.stockDetails.stockExchange.exchange === 'NSE' ? this.props.stockDetails.stockNSECode : this.props.stockDetails.stockBSECode; 
         
-        // console.log(this.props.isLoaded)
-        if(this.props.isLoaded)
-        {
+        // console.log('DATA LOADED ',this.state.dataLoaded);
+        // console.log(this.state.chartHeight,this.state.chartWidth)
             return (
 
                 <>
-                <div className="Indicator__popup">
-                    <div className="Indicator__title__name">
-                        <p>Indicators & Strategies</p>
-                        <span id="Indicator__close" onClick={this.CloseIndicatorPopup.bind(this)}>
-                            <img src={CrossIcon} alt="X"/>
-                        </span>
-                        <IndicatorInfo CloseIndicatorInfo={this.CloseIndicatorInfo} indicatorInfoType={this.state.indicatorInfoType}/>
-                    </div>
-                    <div className="Indicator__options">
-                        <Indicator IndicatorName="Simple Moving Average (SMA)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="SMA"/>
-                        <Indicator IndicatorName="Weighted Moving Average (WMA) " IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="WMA"/>
-                        <Indicator IndicatorName="Exponential Moving Average (EMA)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="EMA"/>
-                        <Indicator IndicatorName="Triangular Moving Average (TMA)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="TMA"/>
-                        <Indicator IndicatorName="Bollinger Bands (BBands)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="BB"/>
-                        <Indicator IndicatorName="Moving Average Convergence/Divergence (MACD)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="MACD"/>
-                        <Indicator IndicatorName="Relative Strength Index (RSI)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="RSI"/>
-                        <Indicator IndicatorName="Average True Range (ATR)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="ATR"/>
-                        <Indicator IndicatorName="Stochastic Oscillator (Slow)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="SOSlow"/>
-                        <Indicator IndicatorName="Stochastic Oscillator (Fast)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="SOFast"/>
-                        <Indicator IndicatorName="Stochastic Oscillator (Full)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="SOFull"/>
-                        <Indicator IndicatorName="Force Index (FI)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="FI"/>
-                        <Indicator IndicatorName="Elder Ray Indicator (ERI)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="ERI"/>
-                        <Indicator IndicatorName="Elder Ray Indicator Bull Power (ERI)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="ERIBull"/>
-                        <Indicator IndicatorName="Elder Ray Indicator Bear Power (ERI)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="ERIBear"/>
-                        <Indicator IndicatorName="Elder Ray Impulse (ERIMP)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="ERIMP"/>
-                        <Indicator IndicatorName="Parabolic SAR (PSAR)" IndicatorInfo={this.OpenIndicatorInfo} IndicatorType={this.changeIndicatorType} InfoType="PSAR"/>
+                <IndicatorPopup 
+                    ChangeIndicatorType={this.ChangeIndicatorType}
+                    CloseIndicatorPopup={this.CloseIndicatorPopup}
+                />
     
-                    </div> 
-                </div>
-    
-                <div className="Compare__popup">
-                    <div className="Compare__title__name">
-                        <p>Compare Symbol</p>
-                        <span id="Compare__close" onClick={this.CloseComparePopup.bind(this)}>
-                            <img src={CrossIcon} alt="X"/>
-                        </span>
-                    </div>
-                    <div className="Compare__stock__search">
-                        <div className="Compare__stock__search__icon">
-                            <img src={SearchIcon} alt=""/>
-                        </div>
-                        <div className="Compare__stock__search__input">
-                            <input placeholder="Search"/>
-                        </div>
-                    </div>
-                    <div className="Compare__options">
-                        <StockCompare Name="ORCL" AddStock={this.addStockData}/>
-                        <StockCompare Name="IBM" AddStock={this.addStockData}/>
-                        <StockCompare Name="CSCO" AddStock={this.addStockData}/>
-                    </div>
-                </div>
+                <ComparePopup 
+                    stockDetails={this.props.stockDetails}
+                    CloseComparePopup={this.CloseComparePopup}
+                    CompareStockConfig={this.props.CompareStockConfig}
+                    compareStock={this.props.compareStock}
+                    removeStock={this.props.removeStock}
+                    RemoveFlag={this.state.RemoveFlag}
+                />
     
                 <div className="Interactive__popup">
                     <div className="Interactive__title__name">
@@ -601,7 +1317,8 @@ export class ChartContainer extends React.PureComponent {
                     </div>
     
                     <div className="stock__info__chart">
-                        <div className="stock__info">
+                        {this.props.stockDetails && 
+                            <div className="stock__info">
                             <div className="stock__details">
                                 <p className="stock__name__code">
                                     <span id="stock__code">{stockName}</span>
@@ -668,36 +1385,87 @@ export class ChartContainer extends React.PureComponent {
                             </div>
                             
                         </div>
+                        }
                         <div className="stock__purchase">
                             <div className="buy__stock"><img src={PlusIcon} alt=""/></div>
                             <div className="sell__stock"><img src={MinusIcon} alt=""/></div>
                         </div>
-                        {this.props.dataLoaded ? 
-                            <div className="stock__chart">
-                                <StockChart 
-                                    key={this.state.zoom ? 1 : 2} 
-                                    openPrice={this.props.stockData.open_price}
-                                    closePrice={this.props.stockData.close_price}
-                                    currentPrice={this.props.stockData.last_traded_price}
-                                    initial={this.props.initial}
-                                    // stockData={this.props.stockData}
-                                    range={this.state.range} 
-                                    width={this.state.chartWidth} 
-                                    height={this.state.chartHeight} 
-                                    zoom={this.state.zoom} 
-                                    chartType={this.state.chartType}
-                                    IndicatorType={this.state.indicatorType}
-                                    TotalCharts={this.state.TotalCharts}
-                                    IndicatorChartTypeArray={this.state.IndicatorChartTypeArray}
-                                    trendLineType={this.state.trendLineType} 
-                                    interactiveType={this.state.interactiveType}
-                                    chartProps={this.props.chartProps}
-                                    stockDetails={this.props.stockDetails}
-                            />
-                            </div>:
-                            <div className="stock__chart stock__chart__blur ">
-                                <Spinner size={30}/>
-                            </div>
+                        {/* {this.state.dataLoaded && this.state.comparedataLoaded?  */}
+                        {this.state.bigdataLoaded && this.state.bigcomparedataLoaded ? 
+                            (
+                                this.state.dataLoaded && this.state.comparedataLoaded ? 
+                                    <div className="stock__chart">
+                                        <StockChart 
+                                            key={this.state.zoom ? 1 : 2} 
+                                            openPrice={this.props.stockData.open_price}
+                                            closePrice={this.props.stockData.close_price}
+                                            currentPrice={this.props.stockData.last_traded_price}
+                                            initial={this.props.initial}
+                                            // stockData={this.props.stockData}
+                                            range={this.state.range} 
+                                            width={this.state.chartWidth} 
+                                            height={this.state.chartHeight} 
+                                            zoom={this.state.zoom} 
+                                            chartType={this.state.chartType}
+                                            IndicatorType={this.state.indicatorType}
+                                            TotalCharts={this.state.TotalCharts}
+                                            TotalSwapCharts={this.state.TotalSwapCharts}
+                                            trendLineType={this.state.trendLineType} 
+                                            interactiveType={this.state.interactiveType}
+                                            chartProps={this.state.chartProps}
+                                            stockDetails={this.props.stockDetails}
+                                            CompareStockConfig={this.props.CompareStockConfig}
+                                            NewCompareStockConfig={this.props.NewCompareStockConfig}
+                                            OldCompareStockConfig={this.props.OldCompareStockConfig}
+                                            toggleHide={this.props.toggleHide}
+                                            removeStock={this.props.removeStock}
+                                            IndicatorChartTypeArray={this.state.IndicatorChartTypeArray}
+                                            OldIndicator={this.state.OldIndicator}
+                                            DeleteIndicatorType={this.DeleteIndicatorType}
+                                            SwapCharts={this.SwapCharts}
+                                            RemoveFlag={this.state.RemoveFlag}
+                                    />
+                                    </div>
+                                    :
+                                    <div className="stock__chart stock__chart__blur ">
+                                        <div className="stock__chart__pulse">
+                                            <Pulse />
+                                        </div>
+                                        {/* <StockChart 
+                                            key={this.state.zoom ? 3 : 4} 
+                                            openPrice={this.props.stockData.open_price}
+                                            closePrice={this.props.stockData.close_price}
+                                            currentPrice={this.props.stockData.last_traded_price}
+                                            initial={this.props.initial}
+                                            // stockData={this.props.stockData}
+                                            range={this.state.range} 
+                                            width={this.state.chartWidth} 
+                                            height={this.state.chartHeight} 
+                                            zoom={this.state.zoom} 
+                                            chartType={this.state.chartType}
+                                            IndicatorType={this.state.indicatorType}
+                                            TotalCharts={this.state.TotalCharts}
+                                            IndicatorChartTypeArray={this.state.IndicatorChartTypeArray}
+                                            trendLineType={this.state.trendLineType} 
+                                            interactiveType={this.state.interactiveType}
+                                            chartProps={this.state.chartProps}
+                                            stockDetails={this.props.stockDetails}
+                                            CompareStockConfig={this.props.CompareStockConfig}
+                                            NewCompareStockConfig={this.props.NewCompareStockConfig}
+                                            OldCompareStockConfig={this.props.OldCompareStockConfig}
+                                            toggleHide={this.props.toggleHide}
+                                            removeStock={this.props.removeStock}
+                                            RemoveFlag={this.state.RemoveFlag}
+                                    /> */}
+                                    </div>
+                            )
+                            :
+                            (
+                                    <div className="stock__chart stock__chart__load">
+                                        <Pulse />
+                                        <p>Loading Chart...</p>
+                                    </div>
+                            )
                         }
                         
                     </div>
@@ -720,13 +1488,7 @@ export class ChartContainer extends React.PureComponent {
                 </div>
                 </>
             )
-        }
-        else
-        {
-            return <div className="chart__container">
-                <Spinner size={40}/>
-            </div>
-        }
+       
     }
 }
 

@@ -391,26 +391,26 @@ export function getFuturePoints(lastPoint,range)
             return points;
         
         case '6M' : 
-            futureDaysArr = getNextDays(60);
+            futureDaysArr = getNextDays(30);
             // console.log(futureDaysArr);
             points = generatePointsMinutes(futureDaysArr,120);
             // console.log(points);
             return points;
         
         case 'YTD' : 
-            futureDaysArr = getNextDays(150,false);
+            futureDaysArr = getNextDays(30,false);
             // console.log(futureDaysArr);
             points = generatePointsDays(futureDaysArr);
             return points;
         
         case '1Y' : 
-            futureDaysArr = getNextDays(180,false);
+            futureDaysArr = getNextDays(90,false);
             // console.log(futureDaysArr);
             points = generatePointsDays(futureDaysArr);
             return points;
         
         case '5Y' : 
-            futureDaysArr = getNextDays(180,false);
+            futureDaysArr = getNextDays(120,false);
             // console.log(futureDaysArr);
             points = generatePointsDays(futureDaysArr);
             return points;

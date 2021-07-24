@@ -7,6 +7,7 @@ function getStocks(req,res)
     // console.log(req.params);
     let industry = req.params.industry;
     let isin = req.params.isin;
+    let quantity = req.params.quantity
 
 
     conn.query('SELECT T1.name AS Name,T1.ISIN,T1.reuters_industry,T2.*,T3.* FROM stock_list_master_reuters_screener_original T1 JOIN NSE_500_stockList T2 JOIN master_security_list_NSE T3 ON T1.`ISIN` = T2.`ISIN Code` AND T1.reuters_industry="'+industry+'" AND T1.ISIN != "'+isin+'" AND T1.nse_code=T3.symbol',(error,result)=>{
@@ -18,7 +19,7 @@ function getStocks(req,res)
                     res.send({
                         error : false,
                         message : 'success',
-                        stocks : result.sort(() => .5 - Math.random()).slice(0,5)
+                        stocks : result.sort(() => .5 - Math.random()).slice(0,quantity)
                     })
                 }
                 else
@@ -46,6 +47,6 @@ function getStocks(req,res)
     // })
 }
 
-StocksToWatch.get('/stockstowatch/:industry/:isin',getStocks);
+StocksToWatch.get('/stockstowatch/:industry/:isin/:quantity',getStocks);
 
 exports.StocksToWatch = StocksToWatch;

@@ -235,7 +235,7 @@ class CreateTable extends React.PureComponent{
 
         Axios({
             method: 'GET',
-            url: `http://${REQUEST_BASE_URL}:8000/createtable/${this.props.type}/${this.props.field}/${this.props.stockcode}`,
+            url: `${REQUEST_BASE_URL}/createtable/${this.props.type}/${this.props.field}/${this.props.stockcode}`,
             responseType: 'json',
             onDownloadProgress: (pEvnt) => {
                 this.setState({loading: Math.round((pEvnt.loaded * 100) / pEvnt.total)})

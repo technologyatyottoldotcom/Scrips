@@ -54,7 +54,7 @@ class StocksToWatch extends React.PureComponent {
     }
 
     getStocksToWatch(industry,isin) {
-        Axios.get(`http://${REQUEST_BASE_URL}:8000/stockstowatch/${industry}/${isin}`)
+        Axios.get(`${REQUEST_BASE_URL}/stockstowatch/${industry}/${isin}/5`)
         .then(res=>{
             const data = res.data;
             console.log(data.stocks);
@@ -68,7 +68,7 @@ class StocksToWatch extends React.PureComponent {
     getStockFromISIN(isin)
     {
         console.log(isin);
-        Axios.get(`http://${REQUEST_BASE_URL}:8000/StockFromISIN/${isin}`)
+        Axios.get(`${REQUEST_BASE_URL}/StockFromISIN/${isin}`)
         .then((res)=>{
             let data = res.data;
             if(!data.error)

@@ -41,7 +41,7 @@ export class UpperStockChart extends React.PureComponent {
     {
         if(this.props.apidata.length !== prevProps.apidata.length)
         {
-            console.log('-----UPDATE-----');
+            // console.log('-----UPDATE-----');
             this.updateChart();
         }
     }
@@ -109,7 +109,7 @@ export class UpperStockChart extends React.PureComponent {
         xScaleVal = xScale;
         displayxAccessorVal = displayXAccessor;
 
-        console.log(chartdata);
+        // console.log(chartdata);
 
         this.setState({
             chartConfig : {

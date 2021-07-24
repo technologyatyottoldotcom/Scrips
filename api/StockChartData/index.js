@@ -45,7 +45,7 @@ function getData(options)
                     }).then((data)=>{
                         let query = data.query;
                         skip = 1;
-                        // console.log(query);
+                        console.log(query);
                         // console.log(skip);
                         if(query)
                         {
@@ -56,9 +56,9 @@ function getData(options)
                                     let dbArray = result.map(obj => Object.values(obj));
                                     // console.log('db Array Temp : ',dbArrayTemp.length);
 
-                                    // console.log('db Array Temp : ',dbArrayTemp.length);
 
-                                    // console.log('db Array : ',dbArray.length,typeof dbArray);
+                                    // console.log('db Array : ',dbArray.length);
+                                    // console.log('db Array : ',dbArray.length);
                                     stockArray = stockArray.concat(dbArray);
                                     stockArray = stockArray.concat(apiArray);
                                     console.log('length : ',stockArray.length);

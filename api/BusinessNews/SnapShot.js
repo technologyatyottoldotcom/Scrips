@@ -755,25 +755,15 @@ class SnapShots {
 
             if(stock.exchange === 'NSE')
             {
-                sql = `(SELECT T1.TIMESTAMP AS Date,T1.OPEN AS stock,T2.Open AS base FROM nse_bhav_2021 T1 INNER JOIN IndexData_NSE_BSE T2 
+                sql = `(SELECT T1.TIMESTAMP AS Date,T1.OPEN AS stock,T2.Open AS base FROM nse_bhav T1 INNER JOIN IndexData_NSE_BSE T2 
                     ON CAST(T1.TIMESTAMP AS DATE) = CAST(T2.Date AS DATE)
-                    WHERE T1.SYMBOL='${stock.nseCode}' AND T2.Symbol='NIFTY_50')
-                    UNION ALL
-                    (SELECT T1.TIMESTAMP AS Date,T1.OPEN AS stock,T2.Open AS base FROM nse_bhav_2020 T1 INNER JOIN IndexData_NSE_BSE T2 
-                    ON CAST(T1.TIMESTAMP AS DATE) = CAST(T2.Date AS DATE)
-                    WHERE T1.SYMBOL='${stock.nseCode}' AND T2.Symbol='NIFTY_50')
-                    ORDER BY Date DESC LIMIT 60`;
+                    WHERE T1.SYMBOL='${stock.nseCode}' AND T2.Symbol='NIFTY_50') ORDER BY Date DESC LIMIT 60`;
             }
             else if(stock.exchange === 'BSE')
             {
-                sql = `(SELECT T1.TRADING_DATE AS Date,T1.OPEN AS stock,T2.Open AS base FROM bse_bhav_2021 T1 INNER JOIN IndexData_NSE_BSE T2 
+                sql = `(SELECT T1.TRADING_DATE AS Date,T1.OPEN AS stock,T2.Open AS base FROM bse_bhav T1 INNER JOIN IndexData_NSE_BSE T2 
                     ON CAST(T1.TRADING_DATE AS DATE) = CAST(T2.Date AS DATE)
-                    WHERE T1.SC_CODE='${stock.bseCode}' AND T2.Symbol='NIFTY_50')
-                    UNION ALL
-                    (SELECT T1.TRADING_DATE AS Date,T1.OPEN AS stock,T2.Open AS base FROM bse_bhav_2020 T1 INNER JOIN IndexData_NSE_BSE T2 
-                    ON CAST(T1.TRADING_DATE AS DATE) = CAST(T2.Date AS DATE)
-                    WHERE T1.SC_CODE='${stock.bseCode}' AND T2.Symbol='NIFTY_50')
-                    ORDER BY Date DESC LIMIT 60`;
+                    WHERE T1.SC_CODE='${stock.bseCode}' AND T2.Symbol='NIFTY_50') ORDER BY Date DESC LIMIT 60`;
             }
 
 
@@ -815,48 +805,50 @@ const MYSQL = (data,func) => {
     //   console.log(reutersCode)
       
     // don't change any query position 
-    conn.query(`
-        SELECT * FROM fundamental_data_reuters_balancesheet_quartely WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Total Common Shares Outstanding%') LIMIT 1;
-        SELECT CLOSE FROM nse_bhav_${currentYear} WHERE SYMBOL='${nseCode}' ORDER BY TIMESTAMP DESC LIMIT 1;
-        SELECT CLOSE FROM bse_bhav_${currentYear} WHERE SC_CODE='${bseCode}' ORDER BY TRADING_DATE DESC LIMIT 1;
-        SELECT CLOSE FROM nse_bhav_${currentYear - 1} WHERE SYMBOL='${nseCode}' ORDER BY TIMESTAMP DESC LIMIT 1;
-        SELECT CLOSE FROM bse_bhav_${currentYear - 1} WHERE SC_CODE='${bseCode}' ORDER BY TRADING_DATE DESC LIMIT 1;
 
-        SELECT * FROM fundamental_data_reuters_income_quartely WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Diluted EPS Excluding ExtraOrd Items%') LIMIT 1;
-        SELECT * FROM fundamental_data_screener_quarterly_screener WHERE stockCode='${nseCode}' AND fieldName LIKE TRIM('EPS in Rs%') LIMIT 1;
+    let query = `SELECT * FROM fundamental_data_reuters_balancesheet_quartely WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Total Common Shares Outstanding%') LIMIT 1;
+    SELECT CLOSE FROM nse_bhav_latest WHERE SYMBOL='${nseCode}' ;
+    SELECT CLOSE FROM bse_bhav_latest WHERE SC_CODE='${bseCode}' ;
+    SELECT CLOSE FROM nse_bhav_latest WHERE SYMBOL='${nseCode}';
+    SELECT CLOSE FROM bse_bhav_latest WHERE SC_CODE='${bseCode}';
 
-        SELECT * FROM fundamental_data_reuters_balancesheet_annual WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Total Equity%') LIMIT 1;
+    SELECT * FROM fundamental_data_reuters_income_quartely WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Diluted EPS Excluding ExtraOrd Items%') LIMIT 1;
+    SELECT * FROM fundamental_data_screener_quarterly_screener WHERE stockCode='${nseCode}' AND fieldName LIKE TRIM('EPS in Rs%') LIMIT 1;
 
-        SELECT * FROM fundamental_data_reuters_income_annual WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('DPS - Common Stock Primary Issue%') LIMIT 1;
+    SELECT * FROM fundamental_data_reuters_balancesheet_annual WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Total Equity%') LIMIT 1;
 
-        SELECT * FROM fundamental_data_reuters_cashflow_annual WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Cash from Operating Activities%') LIMIT 1;
+    SELECT * FROM fundamental_data_reuters_income_annual WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('DPS - Common Stock Primary Issue%') LIMIT 1;
 
-        SELECT * FROM fundamental_data_reuters_balancesheet_quartely WHERE stockCode='${reutersCode}' AND fieldName REGEXP 'Total Equity|Total Debt|Total Assets|Total Current Liabilities' LIMIT 4;
-        SELECT * FROM fundamental_data_screener_balancesheet_screener WHERE stockCode='${nseCode}' AND fieldName REGEXP 'Borrowings|Share Capital +|Reserves' LIMIT 3;
-        
-        SELECT * FROM fundamental_data_screener_shareholding_pattern_screener WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Promoters +%') LIMIT 1;
-     
-        SELECT * FROM fundamental_data_reuters_income_quartely WHERE stockCode='${reutersCode}' AND fieldName = TRIM('Net Income') LIMIT 1;
-        SELECT * FROM fundamental_data_screener_profitloss_screener WHERE stockCode='${nseCode}' AND fieldName = TRIM('Net Profit') LIMIT 1;
+    SELECT * FROM fundamental_data_reuters_cashflow_annual WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Cash from Operating Activities%') LIMIT 1;
 
-        SELECT * FROM fundamental_data_reuters_income_annual WHERE stockCode='${reutersCode}' AND fieldName = TRIM('Net Income') LIMIT 1;
-        SELECT * FROM fundamental_data_reuters_balancesheet_annual WHERE stockCode='${reutersCode}' AND fieldName = TRIM('Total Equity') LIMIT 1;
-        SELECT * FROM fundamental_data_screener_balancesheet_screener WHERE stockCode='${nseCode}' AND fieldName REGEXP 'Share Capital +|Reserves|Total Assets|Other Liabilities +' LIMIT 4;
-        
-        SELECT * FROM fundamental_data_reuters_balancesheet_annual WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Total Assets%') LIMIT 1;
+    SELECT * FROM fundamental_data_reuters_balancesheet_quartely WHERE stockCode='${reutersCode}' AND fieldName REGEXP 'Total Equity|Total Debt|Total Assets|Total Current Liabilities' LIMIT 4;
+    SELECT * FROM fundamental_data_screener_balancesheet_screener WHERE stockCode='${nseCode}' AND fieldName REGEXP 'Borrowings|Share Capital +|Reserves' LIMIT 3;
+    
+    SELECT * FROM fundamental_data_screener_shareholding_pattern_screener WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Promoters +%') LIMIT 1;
+ 
+    SELECT * FROM fundamental_data_reuters_income_quartely WHERE stockCode='${reutersCode}' AND fieldName = TRIM('Net Income') LIMIT 1;
+    SELECT * FROM fundamental_data_screener_profitloss_screener WHERE stockCode='${nseCode}' AND fieldName = TRIM('Net Profit') LIMIT 1;
 
-        SELECT * FROM fundamental_data_reuters_income_quartely WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Operating Income%') LIMIT 1;
-        SELECT * FROM fundamental_data_screener_profitloss_screener WHERE stockCode='${nseCode}' AND fieldName = TRIM('Operating Profit') LIMIT 1;
+    SELECT * FROM fundamental_data_reuters_income_annual WHERE stockCode='${reutersCode}' AND fieldName = TRIM('Net Income') LIMIT 1;
+    SELECT * FROM fundamental_data_reuters_balancesheet_annual WHERE stockCode='${reutersCode}' AND fieldName = TRIM('Total Equity') LIMIT 1;
+    SELECT * FROM fundamental_data_screener_balancesheet_screener WHERE stockCode='${nseCode}' AND fieldName REGEXP 'Share Capital +|Reserves|Total Assets|Other Liabilities +' LIMIT 4;
+    
+    SELECT * FROM fundamental_data_reuters_balancesheet_annual WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Total Assets%') LIMIT 1;
 
-        SELECT * FROM fundamental_data_reuters_balancesheet_annual WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Total Current Liabilities%') LIMIT 1;
+    SELECT * FROM fundamental_data_reuters_income_quartely WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Operating Income%') LIMIT 1;
+    SELECT * FROM fundamental_data_screener_profitloss_screener WHERE stockCode='${nseCode}' AND fieldName = TRIM('Operating Profit') LIMIT 1;
 
-        SELECT * FROM fundamental_data_reuters_balancesheet_quartely WHERE stockCode='${reutersCode}' AND fieldName REGEXP 'Total Current Assets|Total Current Liabilities' LIMIT 2; 
+    SELECT * FROM fundamental_data_reuters_balancesheet_annual WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Total Current Liabilities%') LIMIT 1;
 
-        SELECT * FROM fundamental_data_screener_quarterly_screener WHERE stockCode='${nseCode}' AND fieldName LIKE TRIM('Net Profit%') LIMIT 1;
-        
-        SELECT * FROM fundamental_data_screener_quarterly_screener WHERE stockCode='${nseCode}' AND fieldName LIKE TRIM('Operating Profit%') LIMIT 1;
+    SELECT * FROM fundamental_data_reuters_balancesheet_quartely WHERE stockCode='${reutersCode}' AND fieldName REGEXP 'Total Current Assets|Total Current Liabilities' LIMIT 2; 
 
-        `, typeof func === 'function' && func)
+    SELECT * FROM fundamental_data_screener_quarterly_screener WHERE stockCode='${nseCode}' AND fieldName LIKE TRIM('Net Profit%') LIMIT 1;
+    
+    SELECT * FROM fundamental_data_screener_quarterly_screener WHERE stockCode='${nseCode}' AND fieldName LIKE TRIM('Operating Profit%') LIMIT 1;`
+
+    // console.log(query);
+
+    conn.query(query, typeof func === 'function' && func)
     // fundamental_data_screener_balancesheet_screener ( review the stockCode ( nseCode || reutersCode)) when searching //this will give an error 
 }
 
@@ -872,11 +864,14 @@ const StockSnapShot = (stock)=>{
     
             if(!e)
             {                
-    
+                
+                // console.log(r);
                 var snp = new SnapShots(r,stock,conn);
 
                 snp.Beta().
                 then(response=>{
+
+                    console.log(response);
                     resolve({
                         'MarketCap' : FormatValue(snp.MarketCap(),'Market_Cap','s'),
                         'PriceToEarnings' : FormatValue(snp.PriceToEarnings(),'Price_To_Earnings','rs'),
@@ -923,7 +918,7 @@ const StockSnapShot = (stock)=>{
             }
             else
             {
-                console.log(e)
+                console.log(e);
                 reject(SendResponse(106))
             }
      

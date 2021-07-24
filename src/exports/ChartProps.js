@@ -58,7 +58,36 @@ const getXAxisProps = ()=>
     }
 }
 
-const getYAxisProps = ()=>
+const getYAxisProps = (totalCharts)=>
+{
+    return {
+        axisAt : "right",
+        orient : "right",
+        ticks : Math.ceil(10/totalCharts),
+        tickStroke : '#888888',
+        stroke : '#c8c8c8' ,
+        fontWeight : fontWeight,
+        fontFamily : fontFamily,
+        fontSize : 10,
+        tickFormat : format(".2f")
+    }
+}
+
+const getCompareXAxisProps = ()=>
+{
+    return {
+        axisAt : "bottom",
+        orient : "bottom",
+        ticks : 10,
+        tickStroke : '#888888',
+        stroke : '#c8c8c8' ,
+        fontWeight : fontWeight,
+        fontFamily : fontFamily,
+        fontSize : 10
+    }
+}
+
+const getCompareYAxisProps = ()=>
 {
     return {
         axisAt : "right",
@@ -69,7 +98,7 @@ const getYAxisProps = ()=>
         fontWeight : fontWeight,
         fontFamily : fontFamily,
         fontSize : 10,
-        tickFormat : format(".2f")
+        tickFormat : format(".2%")
     }
 }
 
@@ -100,5 +129,7 @@ export {
     getYCoordinateProps,
     getXAxisProps,
     getYAxisProps,
+    getCompareXAxisProps,
+    getCompareYAxisProps,
     tooltipContent
 }

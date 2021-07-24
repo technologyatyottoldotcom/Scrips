@@ -7,23 +7,36 @@ import { curveMonotoneX, curveCardinal } from "d3-shape";
 import {ChartCanvas,Chart} from 'react-stockcharts';
 import {XAxis,YAxis} from 'react-stockcharts/lib/axes';
 import {LineSeries,AreaSeries,BarSeries,CandlestickSeries,ScatterSeries ,OHLCSeries,KagiSeries,RenkoSeries,PointAndFigureSeries, SquareMarker,CircleMarker , BollingerSeries , MACDSeries , RSISeries ,StochasticSeries ,StraightLine ,ElderRaySeries , SARSeries , VolumeProfileSeries} from 'react-stockcharts/lib/series';
-import { pointAndFigure ,kagi,renko} from "react-stockcharts/lib/indicator";
+import { pointAndFigure ,kagi,renko , compare} from "react-stockcharts/lib/indicator";
 import { discontinuousTimeScaleProvider , discontinuousTimeScaleProviderBuilder } from "react-stockcharts/lib/scale";
 import {fitWidth} from 'react-stockcharts/lib/helper';
+import { TrendLine,EquidistantChannel,StandardDeviationChannel ,FibonacciRetracement ,GannFan} from "react-stockcharts/lib/interactive";
+import {TrendLineAppearance,EquidistantChannelAppearance,StandardDeviationChannelAppearance,FibRetAppearance,GannFanAppearance} from '../../exports/InteractiveAppearance';
 import { last ,toObject , rightDomainBasedZoomAnchor , lastVisibleItemBasedZoomAnchor } from "react-stockcharts/lib/utils/zoomBehavior";
 import {lastValidVisibleItemBasedZoomAnchor} from './CustomChartComponents/ZoomBehaviour/zoomBehaviour';
 import { timeFormat } from 'd3-time-format';
-import { TrendLine,EquidistantChannel,StandardDeviationChannel ,FibonacciRetracement ,GannFan} from "react-stockcharts/lib/interactive";
 import {saveInteractiveNodes, getInteractiveNodes} from "../../exports/InteractiveUtils";
 import { HoverTooltip } from "./CustomChartComponents/HoverTooltip/HoverTooltip";
 import {getXCoordinateProps, getYCoordinateProps, getXAxisProps, getYAxisProps , tooltipContent } from '../../exports/ChartProps';
-import { CrossHairCursor, MouseCoordinateX, MouseCoordinateY ,PriceCoordinate, EdgeIndicator  } from "react-stockcharts/lib/coordinates";
-import {sma20,wma20,ema20,tma20,bb,macdCalculator,rsiCalculator,atrCalculator,slowSTO,fastSTO,fullSTO,fi,fiEMA,elder,elderImpulseCalculator,defaultSar,changeCalculator,compareCalculator} from '../../exports/MathematicalIndicators';
-import {TrendLineAppearance,EquidistantChannelAppearance,StandardDeviationChannelAppearance,FibRetAppearance,GannFanAppearance} from '../../exports/InteractiveAppearance';
+import {getMaxArray,CalculateIndicatorData} from '../../exports/MathematicalIndicators';
 import LastPointIndicator from './CustomChartComponents/LastPointEdgeIndicator/LastPointIndicator';
-import PriceMarkerCoordinate from './CustomChartComponents/PriceMarker/PriceMarkerCoordinate';
-import LabelEdgeCoordinate from './CustomChartComponents/EdgeLabel/LabelEdgeCoordinate';
+import {getChartHeight,getIndicatorData,ChartWrapper,ChartWrapperZoom,ChartWrapperCompare,ChartIndicators} from './Charts/ChartFunctions';
+import { splitAdjustment } from '../../exports/SplitAdjustment';
+import { CrossHairCursor,MouseCoordinateX, MouseCoordinateY ,PriceCoordinate, EdgeIndicator } from "react-stockcharts/lib/coordinates";
+import IndicatorOptions from './CustomChartComponents/IndicatorOptions/IndicatorOptions';
 
+
+function getMaxUndefined(calculators) {
+    console.log(calculators)
+	if(calculators.length > 0)
+    {
+        return calculators.map(each => each.undefinedLength && each.undefinedLength()).reduce((a, b) => Math.max(a, b));
+    }
+    else
+    {
+        return 0;
+    }
+}
 
 export class StockChart extends React.PureComponent {
 
@@ -39,12 +52,12 @@ export class StockChart extends React.PureComponent {
         this.onDrawCompleteChart = this.onDrawCompleteChart.bind(this);
         this.updateChart = this.updateChart.bind(this);
         this.updateHead = this.updateHead.bind(this);
-        this.setInteractionType = this.setInteractionType.bind(this);
         this.setUpChart = this.setUpChart.bind(this);
         this.handleDownloadMore = this.handleDownloadMore.bind(this);
 
+
+
         this.state = {
-            isInteracted : false,
             data : null,
             xScale : null,
             xAccessor : null, 
@@ -63,7 +76,7 @@ export class StockChart extends React.PureComponent {
             SDchannel : [],
             FibRet : [],
             GannFan : [],
-            chartProps : this.props.chartProps
+            chartProps : this.props.chartProps,
         };
     }
 
@@ -87,16 +100,27 @@ export class StockChart extends React.PureComponent {
             // console.log(this.props.currentPrice)
             this.updateHead();
         }
-        // this.updateChart();
+        else if(this.props.CompareStockConfig.length !== prevProps.CompareStockConfig.length)
+        {
+            console.log('Compare Added');
+            this.updateChart();
+        }
+        else if(this.props.IndicatorChartTypeArray.length !== prevProps.IndicatorChartTypeArray.length
+                 || this.props.OldIndicator !== prevProps.OldIndicator
+                 || this.props.TotalSwapCharts !== prevProps.TotalSwapCharts )
+        {
+            console.log('Indicator Added');
+            this.updateChart();
+        }
     }
 
     componentWillReceiveProps(nextProps) {
         this.updateChart();
     }
     
-    // componentWillUnmount() {
-	// 	document.removeEventListener("keyup", this.onKeyPress);
-    // }
+    componentWillUnmount() {
+		document.removeEventListener("keyup", this.onKeyPress);
+    }
 
     setUpChart()
     {
@@ -108,26 +132,57 @@ export class StockChart extends React.PureComponent {
 
         console.log('START INDEX : ',startIndex);
 
-        let chartdata = inputdata.concat(extradata);
+        // console.log(inputdata);
 
-        const LENGTH_TO_SHOW = chartdata.length - startIndex;
+        let sadata = splitAdjustment(inputdata);
 
-        console.log('LENGTH : ',LENGTH_TO_SHOW);
+        const maxWindowSize = getMaxUndefined(getMaxArray(this.props.IndicatorChartTypeArray));
+        let chartdata,dataToCalculate,calculatedData,accessordata,LENGTH_TO_SHOW;
 
-        const dataToCalculate = chartdata.slice(-LENGTH_TO_SHOW);
+        if(this.props.IndicatorChartTypeArray.length === 0)
+        {
+            chartdata = sadata.concat(extradata);
+            LENGTH_TO_SHOW = chartdata.length - startIndex;
+            dataToCalculate = chartdata.slice(
+                -LENGTH_TO_SHOW - maxWindowSize
+            );
+            calculatedData = dataToCalculate;
+            accessordata = calculatedData;
+        }
 
-        const calculatedData = dataToCalculate;
+        else
+        {
+            chartdata = sadata;
+            LENGTH_TO_SHOW = chartdata.length - startIndex;
+            dataToCalculate = chartdata.slice(
+                -LENGTH_TO_SHOW - maxWindowSize
+            );
+            calculatedData = dataToCalculate;
+            accessordata = calculatedData;
+
+        }
+
+        // let chartdata = sadata.concat(extradata);
+        // let chartdata = sadata;
+
+
+        
+
+        // const dataToCalculate = chartdata.slice(-LENGTH_TO_SHOW - maxWindowSize);
+
+        // let calculatedData = dataToCalculate;
 
         const indexCalculator = discontinuousTimeScaleProviderBuilder().indexCalculator();
+
 
         const { index } = indexCalculator(calculatedData);
 
 
+
         const xScaleProvider = discontinuousTimeScaleProviderBuilder()
 			.withIndex(index);
-		const { data: linearData, xScale, xAccessor, displayXAccessor } = xScaleProvider(calculatedData.slice(-LENGTH_TO_SHOW));
+		const { data: linearData, xScale, xAccessor, displayXAccessor } = xScaleProvider(accessordata);
 
-        // console.log(linearData);
 
         this.setState({
             apidata : inputdata,
@@ -147,40 +202,57 @@ export class StockChart extends React.PureComponent {
         
         // console.log("--UPDATE CHART--");
         const { chartdata: newdata , extradata , lastPoint } = this.props.chartProps;
-        let chartdata = newdata.concat(extradata);
-        // let chartdata = newdata;
         const { initialIndex } = this.state;
+
+        let chartdata,dataToCalculate,calculatedData,accessordata;
+
+        if(this.props.IndicatorChartTypeArray.length === 0)
+        {
+            chartdata = newdata.concat(extradata);
+            dataToCalculate = chartdata.slice(
+                -this.canvas.fullData.length
+            );
+            calculatedData = dataToCalculate;
+            accessordata = calculatedData.slice(-this.canvas.fullData.length);
+        }
+
+        else
+        {
+            chartdata = newdata;
+            dataToCalculate = chartdata.slice(
+                -this.canvas.fullData.length
+            );
+            calculatedData = dataToCalculate;
+            accessordata = calculatedData;
+
+        }
+
+        calculatedData = CalculateIndicatorData(this.props.IndicatorChartTypeArray,dataToCalculate);
+
+        console.log(calculatedData[calculatedData.length - 1])
+
         /* SERVER - START */
-        const dataToCalculate = chartdata.slice(
-          -this.canvas.fullData.length
-        );
 
-        // console.log(dataToCalculate.length);
-
-        // console.log(initialIndex);
-    
-        const calculatedData = dataToCalculate;
         const indexCalculator = discontinuousTimeScaleProviderBuilder()
           .initialIndex(initialIndex)
           .indexCalculator();
-            
-        // console.log(indexCalculator);
 
         const { index } = indexCalculator(calculatedData);
+
         // /* SERVER - END */
     
         const xScaleProvider = discontinuousTimeScaleProviderBuilder()
           .initialIndex(initialIndex)
           .withIndex(index);
-        const {
+
+        let {
           data: linearData,
           xScale,
           xAccessor,
           displayXAccessor
         } = xScaleProvider(calculatedData.slice(-this.canvas.fullData.length));
-    
-        // // console.log(head(linearData), last(linearData))
-        // // console.log(linearData.length)
+
+        // console.log(linearData);
     
         this.setState({
           apidata : newdata,
@@ -205,21 +277,16 @@ export class StockChart extends React.PureComponent {
         });
     }
 
-    setChartConfiguration()
-    {
-
-    }
-
     handleDownloadMore(start, end) {
 
         // console.log('dm');
         if (Math.ceil(start) === end) return;
-		// console.log("rows to download", rowsToDownload, start, end)
-        console.log(this.state);
+		console.log("rows to download", start, end)
+        // console.log(this.state);
         const { data: prevData } = this.state;
 		const { chartdata: inputData } = this.props.chartProps;
 
-        console.log('PREV LENGTH : ',prevData.length);
+        // console.log('PREV LENGTH : ',prevData.length);
 
 
         if (inputData.length === prevData.length) return;
@@ -228,11 +295,14 @@ export class StockChart extends React.PureComponent {
 
 		const rowsToDownload = end - Math.ceil(start);
 
+        const maxWindowSize = getMaxUndefined(getMaxArray(this.props.IndicatorChartTypeArray));
+        // const maxWindowSize = getMaxUndefined([this.state.wma26,this.state.sma26]);
 
         const dataToCalculate = inputData
-			.slice(-rowsToDownload  - prevData.length, - prevData.length);
+			.slice(-rowsToDownload - maxWindowSize - prevData.length, - prevData.length);
 
-        const calculatedData = dataToCalculate;
+        const calculatedData = CalculateIndicatorData(this.props.IndicatorChartTypeArray,dataToCalculate);
+        // const calculatedData = this.state.wma26(this.state.sma26(dataToCalculate));
 
         // console.log(calculatedData);
         
@@ -319,6 +389,7 @@ export class StockChart extends React.PureComponent {
     onKeyPress(e) {
 		const keyCode = e.which;
 		// console.log(keyCode);
+        // console.log(this.canvas);
 		switch (keyCode) {
 		case 46: { // DEL
 
@@ -337,7 +408,7 @@ export class StockChart extends React.PureComponent {
             const GannFan = this.state.GannFan
 				.filter(each => !each.selected);
 
-			this.Canvas.cancelDrag();
+			this.canvas.cancelDrag();
 			this.setState({
                 trends,
                 channel,
@@ -352,7 +423,7 @@ export class StockChart extends React.PureComponent {
             // console.log(this.TrendLine_1);
 			// this.node_1.terminate();
 			// this.node_3.terminate();
-			this.Canvas.cancelDrag();
+			this.canvas.cancelDrag();
 			this.setState({
                 enableTrendLine: false,
                 enableChannel : false,
@@ -369,6 +440,7 @@ export class StockChart extends React.PureComponent {
             
             if(this.props.interactiveType === 'line')
             {
+                console.log('LINE')
                 this.setState({
                     enableTrendLine: true,
                     enableChannel : false,
@@ -434,133 +506,6 @@ export class StockChart extends React.PureComponent {
             break;
         }
 	    }
-    }
-
-    getIndicatorData(indicator,chartdata)
-    {
-        let tempData,indicatorSeries,chartIndicatorY;
-
-        if(indicator === 'SMA')
-        {
-            tempData = sma20(chartdata);
-            chartIndicatorY = (d) =>[d.open,d.close];
-            indicatorSeries =  <LineSeries yAccessor={sma20.accessor()} stroke={sma20.stroke()} strokeWidth ={2}/>;
-        }
-        else if(indicator === 'WMA')
-        {
-            tempData = wma20(chartdata);
-            chartIndicatorY = (d) =>[d.open,d.close];
-            indicatorSeries =  <LineSeries yAccessor={wma20.accessor()} stroke={wma20.stroke()} strokeWidth ={2}/>;
-        }
-        else if(indicator === 'EMA')
-        {
-            tempData = ema20(chartdata);
-            chartIndicatorY = (d) =>[d.open,d.close];
-            indicatorSeries =  <LineSeries yAccessor={ema20.accessor()} stroke={ema20.stroke()} strokeWidth ={2}/>;
-        }
-        else if(indicator === 'TMA')
-        {
-            tempData = tma20(chartdata);
-            chartIndicatorY = (d) =>[d.open,d.close];
-            indicatorSeries =  <LineSeries yAccessor={tma20.accessor()} stroke={tma20.stroke()} strokeWidth ={2}/>;
-        }
-        else if(indicator === 'BB')
-        {
-            tempData = bb(chartdata);
-            chartIndicatorY = (d) =>[d.open,d.close];
-            indicatorSeries =  <BollingerSeries yAccessor={d => d.bb} stroke={{top : '#c0392b' , middle : '#2c3e50' , bottom : '#c0392b'}} fill="#e67e22" opacity={0.5} />;
-        }
-        else if(indicator === 'MACD')
-        {
-            tempData = macdCalculator(chartdata);
-            chartIndicatorY = macdCalculator.accessor();
-            indicatorSeries = <MACDSeries yAccessor={d => d.macd} stroke={{macd : '#ff7675' , signal : '#00b894'}} fill={{divergence : '#3498db'}} width={3} zeroLineOpacity={0.8} widthRatio={1}/>;
-        }
-        else if(indicator === 'RSI')
-        {
-            tempData = rsiCalculator(chartdata);
-            chartIndicatorY = [0,100];
-            indicatorSeries = <RSISeries yAccessor={d => d.rsi} stroke={{line: "#000000" , top: "#000000" , middle: "#000000", bottom: "#000000", outsideThreshold: "#ff7675", insideThreshold: "#00b894"}} strokeWidth={{outsideThreshold : 2 , insideThreshold : 2 , top: 0.7, middle: 0.7, bottom: 0.7}}/>
-        }
-        else if(indicator === 'ATR')
-        {
-            tempData = atrCalculator(chartdata);
-            chartIndicatorY = atrCalculator.accessor();
-            indicatorSeries = <LineSeries yAccessor={atrCalculator.accessor()} stroke='#2ecc71' strokeWidth={2}/>
-        }
-        else if(indicator === 'SOSlow')
-        {
-            tempData = slowSTO(chartdata);
-            chartIndicatorY = [0,100];
-            indicatorSeries = <StochasticSeries yAccessor={d => d.slowSTO} stroke={{top : '#000000' , middle : '#000000' , bottom : '#000000' , dLine : '#e67e22' , kLine : '#1abc9c'}} refLineOpacity={0.7}/>;
-        }
-        else if(indicator === 'SOFast')
-        {
-            tempData = fastSTO(chartdata);
-            chartIndicatorY = [0,100];
-            indicatorSeries = <StochasticSeries yAccessor={d => d.fastSTO} stroke={{top : '#000000' , middle : '#000000' , bottom : '#000000' , dLine : '#e67e22' , kLine : '#1abc9c'}} refLineOpacity={0.7}/>
-        }
-        else if(indicator === 'SOFull')
-        {
-            tempData = fullSTO(chartdata);
-            chartIndicatorY = [0,100];
-            indicatorSeries = <StochasticSeries yAccessor={d => d.fullSTO} stroke={{top : '#000000' , middle : '#000000' , bottom : '#000000' , dLine : '#e67e22' , kLine : '#1abc9c'}} refLineOpacity={0.7}/>
-        }
-        else if(indicator === 'FI')
-        {
-            tempData = fiEMA(fi(chartdata));
-            chartIndicatorY = fi.accessor();
-            indicatorSeries = <>
-                <AreaSeries baseAt={scale => scale(0)} yAccessor={fiEMA.accessor()} fill='#e67e22' stroke='#e74c3c' />
-                <StraightLine yValue={0} />
-            </>
-        }
-        else if(indicator === 'ERI')
-        {
-            tempData = elder(chartdata);  
-            chartIndicatorY = [0,elder.accessor()];
-            indicatorSeries = <ElderRaySeries yAccessor={elder.accessor()} bullPowerFill='#00b894' bearPowerFill='#ff7675' opacity={1} widthRatio={0.1}/>
-        }
-        else if(indicator === 'ERIBull')
-        {
-            tempData = elder(chartdata); 
-            chartIndicatorY = [0,d => elder.accessor()(d) && elder.accessor()(d).bullPower];
-            indicatorSeries = <>
-                <BarSeries yAccessor={d => elder.accessor()(d) && elder.accessor()(d).bullPower} baseAt={(xScale, yScale, d) => yScale(0)} fill="#00b894" width={3} opacity={1} />
-                <StraightLine yValue={0} />
-            </> 
-        }
-        else if(indicator === 'ERIBear')
-        {
-            tempData = elder(chartdata); 
-            chartIndicatorY = [0, d => elder.accessor()(d) && elder.accessor()(d).bearPower];
-            indicatorSeries = <>
-                <BarSeries yAccessor={d => elder.accessor()(d) && elder.accessor()(d).bullPower} baseAt={(xScale, yScale, d) => yScale(0)} fill="#ff7675" width={3} opacity={1} />
-                <StraightLine yValue={0} />
-            </> 
-        }
-        else if(indicator === 'ERIMP')
-        {
-            tempData = elderImpulseCalculator(macdCalculator(ema20(chartdata))); 
-            chartIndicatorY = macdCalculator.accessor();
-            indicatorSeries = <MACDSeries yAccessor={d => d.macd} stroke={{macd : '#ff7675' , signal : '#00b894'}} fill={{divergence : '#3498db'}} width={3} zeroLineOpacity={0.8} widthRatio={1}/>
-        }
-        else if(indicator === 'PSAR')
-        {
-            tempData = defaultSar(chartdata); 
-            indicatorSeries = <SARSeries yAccessor={d => d.sar} fill={{
-                falling: "#4682B4",
-                rising: "#15EC2E",
-            }}/>;
-        }
-        else if(indicator === 'vlmp')
-        {
-            tempData = ema20(chartdata);
-            chartIndicatorY = [d => [d.high, d.low]];
-            indicatorSeries = <VolumeProfileSeries fill='#000000'/>;
-        }
-
-        return [tempData,indicatorSeries,chartIndicatorY];
     }
 
     getChartType(chartType,chartdata)
@@ -640,42 +585,49 @@ export class StockChart extends React.PureComponent {
         return [calculatedData,chartSeries];
     }
 
-    getChartHeight(height,zoom,TotalCharts)
+    
+    getYExtents(range,zoom,open,high,low,lastPoint)
     {
 
-        // console.log(height);
-        if(zoom)
+
+        if(range === '1Y' || range === '5Y' || range === 'MAX')
         {
-            return (height/TotalCharts)-((20+((TotalCharts-1)*10))/(TotalCharts));
+            return [open + open*(0.1),open - open*(0.1)]
         }
         else
         {
-            return height;
+            let h,l;
+            if(zoom)
+            {
+                h = 0.2;
+                l = 0.1
+            }
+            else
+            {
+                h = 0.5;
+                l = 0.1;
+            }
+            if(high && low)
+            {
+                return [high+(high*(h/100)),low-(low*(l/100))];
+            }
+            else
+            {
+                // console.log(lastPoint.high+(lastPoint.high*(h/100)),lastPoint.low-(lastPoint.low*(l/100)))
+                return [lastPoint.high+(lastPoint.high*(h/100)),lastPoint.low-(lastPoint.low*(l/100))];
+            }
         }
     }
 
-    getYExtents(zoom,high,low,lastPoint)
+    getCompareYExtents(compare)
     {
-
-        let h,l;
-        if(zoom)
+        // console.log(compare);
+        let arr = Object.values(compare);
+        if(arr.length > 0)
         {
-            h = 1.5;
-            l = 0.1
+            return [Math.max(...arr)+0.004,Math.min(...arr)-0.004];
         }
-        else
-        {
-            h = 0.5;
-            l = 0.1;
-        }
-        if(high && low)
-        {
-            return [high+(high*(h/100)),low-(low*(l/100))];
-        }
-        else
-        {
-            return [lastPoint.high+(lastPoint.high*(h/100)),lastPoint.low-(lastPoint.low*(l/100))];
-        }
+        return compare;
     }
 
     getDisplayBuffer(range)
@@ -730,55 +682,30 @@ export class StockChart extends React.PureComponent {
         
     }
 
-    setInteractionType(type)
+    calculateChartData(data)
     {
-        // console.log(type);
-        let startDate = type.itemFirst.date;
-        let endDate = type.itemLast.date;
+        let chartdata = data;
+        let IndicatorChartTypeArray = this.props.IndicatorChartTypeArray;
+        IndicatorChartTypeArray.forEach((indicator,indx)=>{
 
-        console.log(startDate,endDate)
-
-        let xAccessorVal = this.state.xAccessor;
-        let dataVal = this.state.data;
-
-        let buffer = this.getDisplayBuffer(this.props.chartProps.range);
-
-        let startIndx = dataVal.findIndex((d)=>{
-            return d.date === startDate;
         });
-
-        let endIndx = dataVal.findIndex((d)=>{
-            return d.date === endDate;
-        });
-
-        // console.log(startIndx,endIndx);
-
-        let start = xAccessorVal(dataVal[Math.min(startIndx,dataVal.length-1)]);
-        let end = xAccessorVal(dataVal[Math.max(dataVal.length - (endIndx) + buffer,0)]);
-        // console.log(dataVal[start],dataVal[end]);
-        let xExtents = [start,end];
-
-        console.log(start,end);
-
-        if(this.state.chartConfig.xExtents !== xExtents)
-        {
-            // this.setState({
-            //     chartConfig : {
-            //         xExtents : xExtents
-            //     }
-            // })
-        }
-       
     }
 
     render() {
 
         if(this.state.data)
         {
-            console.log('---RENDER CHART---');
+            console.log('---RENDER CHART---')
             const {type,width,height,ratio,range,zoom,chartType,TotalCharts,IndicatorChartTypeArray,trendLineType} = this.props;
 
-            const { data, xScale, xAccessor, displayXAccessor } = this.state;
+            let { data, xScale, xAccessor, displayXAccessor } = this.state;
+
+            // console.log(data,xScale,xAccessor,displayXAccessor);
+
+            // console.log(width);
+
+            // console.log('INDICATOR CHART ARRAY : ',IndicatorChartTypeArray);
+
             let margin;
 
             if(zoom)
@@ -802,17 +729,55 @@ export class StockChart extends React.PureComponent {
 
             // console.log(this.props.zoom,this.props.width,this.props.height)
 
+            //compare stock configurations
+            let CompareStockConfig = this.props.CompareStockConfig;
+
+            let CompareCodes = [];
+
+            CompareStockConfig.forEach((c)=>{
+                CompareCodes.push(c.symbol+'open')
+            });
+
+            // console.log(CompareCodes);
+
+            const compareCalculator = compare()
+            .options({
+                basePath: "open",
+                mainKeys: [],
+                compareKeys: ["open", ...CompareCodes],
+            })
+            .accessor(d => d.compare)
+            .merge((d, c) => { d.compare = c; });
+
+            let postCalculator,yExtents;
+
+            const yAcc = (d, s) => {
+                // console.log("Data : ", d, s);
+                return d.compare[s];
+            };
+
+            if(CompareStockConfig.length > 0)
+            {
+                postCalculator = compareCalculator;
+                yExtents = (d) => this.getCompareYExtents(d.compare)
+            }
+            else
+            {
+                yExtents = (d) =>this.getYExtents(range,zoom,d.open,d.high,d.close,this.state.lastPoint);
+            }
+
+
 
             return (
                 <div>
                     <ChartCanvas 
-                        ref={this.saveCanvas}
+                        ref={node => this.saveCanvas(node)}
                         width={width} 
                         height={height} 
                         ratio={ratio}
-                        margin = {margin}
+                        margin={margin}
                         seriesName="IBM"
-                        postCalculator={compareCalculator}
+                        postCalculator={postCalculator}
                         xScale={xScale}
                         xAccessor={xAccessor}
                         displayXAccessor={displayXAccessor}
@@ -826,212 +791,124 @@ export class StockChart extends React.PureComponent {
                     <Chart 
                         id={1} 
                         padding={30}
-                        yExtents={d=> this.getYExtents(zoom,d.high,d.low,this.state.lastPoint)} 
-                        height={this.getChartHeight(height,zoom,TotalCharts)}>
+                        yExtents={yExtents}
+                        origin={[0,0]} 
+                        height={getChartHeight(height,zoom,TotalCharts)}
+                        // height={200}
 
-                        {/* {this.state.chartConfig.chartSeries} */}
-                        {chartSeries}
+                    >
 
-                        
+
                         {!zoom && <>
-                            <EdgeIndicator 
-                                orient="left"
-                                edgeAt="right"
-                                itemType="last"
-                                yAccessor={d =>d.open}
-                                displayFormat={format(".2f")}
-                                arrowWidth={0}
-                                fill="#ffffff"
-                                fontSize={11}
-                                textFill="#00a0e3"
-                                strokeWidth={1}
-                                lineOpacity={0}
-                                dx={1}
-                            />
+                            {CompareStockConfig.length > 0 ? 
+                                (ChartWrapperCompare(zoom,range,this.props.stockDetails,CompareStockConfig,this.props.toggleHide,this.props.removeStock))
+                                :
+                                (ChartWrapper(range,chartType,this.props.closePrice))
+                            }
                         </>}
 
                         {zoom && <>
-
-                            <YAxis {...getYAxisProps()} {...gridProps}/>
-
-                            {TotalCharts === 1 ? 
-                                <>
-                                    <XAxis {...getXAxisProps()} {...gridProps}/>
-                                    <MouseCoordinateX {...getXCoordinateProps(range)}/>
-                                    <LabelEdgeCoordinate 
-                                        at="right"
-                                        orient="left"
-                                        price={this.state.lastPoint.open}
-                                        displayFormat={format('.2f')}
-                                        labelText={this.props.stockDetails.stockNSECode}
-                                        fill="#00a0e3"
-                                        rectHeight={18}
-                                        rectWidth={this.props.stockDetails.stockNSECode.length * 11}
-                                        dx={1}
-                                        fontSize={11}
-                                        strokeDasharray="ShortDot"
-                                        lineStroke="#00a0e3"
-                                        lineOpacity={0.5}
-                                        textFill="#ffffff"
-                                    />
-                                    <PriceCoordinate 
-                                        at="right"
-                                        orient="right"
-                                        price={this.state.lastPoint.open}
-                                        displayFormat={format('.2f')}
-                                        fill="#00a0e3"
-                                        rectHeight={18}
-                                        fontSize={11}
-                                        hideLine={true}
-                                        lineOpacity={0}
-                                        
-                                    />
-
-                                    <EdgeIndicator 
-                                        orient="right"
-                                        edgeAt="right"
-                                        itemType="last"
-                                        yAccessor={d =>d.open}
-                                        displayFormat={format(".2f")}
-                                        arrowWidth={0}
-                                        fill="#00a0e3"
-                                        fontSize={11}
-                                        rectHeight={18}
-                                        strokeWidth={1}
-                                        lineOpacity={0}
-                                    />
-                            
-                                </> :
-                                <>
-                                    <XAxis {...getXAxisProps()} {...this.state.chartConfig.gridProps}/>
-                                </>
+                            {CompareStockConfig.length > 0 ? 
+                                (ChartWrapperCompare(zoom,range,this.props.stockDetails,CompareStockConfig,this.props.toggleHide,this.props.removeStock,this.props.TotalCharts)                                )
+                                :
+                                (ChartWrapperZoom(range,this.state.lastPoint,this.props.stockDetails,chartType,this.props.closePrice,this.props.TotalCharts))
                             }
 
-                            
-                            <MouseCoordinateY {...getYCoordinateProps()}/>
+
                         </>}
-                        <PriceMarkerCoordinate 
-                            at="left"
-                            orient="right"
-                            price={this.props.closePrice}
-                            displayFormat={format('.2f')}
-                            strokeDasharray="ShortDot"
-                            dx={20} 
-                            fill="#4E4E4E"
-                            rectWidth={55}
-                            rectHeight={20} 
-                            fontSize={10}  
-                        />
 
-                        <HoverTooltip
-                            tooltipContent={tooltipContent(range)}
-                            fontSize={12}
-                            bgOpacity={0}
-                            fill='#ffffff'
-                            opacity={1}
-                            stroke='none'
-                            isLabled={false}
-                        />
+                        {zoom && 
 
-                        {/* <TrendLine
-                                ref={this.saveInteractiveNodes("Trendline", 1)}
-                                enabled={this.state.enableTrendLine}
-                                type={trendLineType}
-                                snap={false}
-                                snapTo={d => [d.high, d.low]}
-                                onStart={() => console.log("START")}
-                                onComplete={this.onDrawCompleteChart}
-                                trends={this.state.trends}
-                                currentPositionStroke='#f1c40f'
-                                currentPositionStrokeWidth={4}
-                                currentPositionRadius={5}
-                                appearance={TrendLineAppearance}
-                                hoverText={{
-                                    text : 'Select'
-                                }}
-                            />
+                            <>
+                                <TrendLine
+                                        ref={this.saveInteractiveNodes("Trendline", 1)}
+                                        enabled={this.state.enableTrendLine}
+                                        type={trendLineType}
+                                        snap={false}
+                                        snapTo={d => [d.high, d.low]}
+                                        onStart={() => console.log("START")}
+                                        onComplete={this.onDrawCompleteChart}
+                                        trends={this.state.trends}
+                                        currentPositionStroke='#f1c40f'
+                                        currentPositionStrokeWidth={4}
+                                        currentPositionRadius={5}
+                                        appearance={TrendLineAppearance}
+                                        hoverText={{
+                                            text : 'Select'
+                                        }}
+                                /> 
 
-                            <EquidistantChannel
-                                ref={this.saveInteractiveNodes("EquidistantChannel", 1)}
-                                enabled={this.state.enableChannel}
-                                onStart={() => console.log("START")}
-                                onComplete={this.onDrawCompleteChart}
-                                channels={this.state.channel}
-                                currentPositionStroke='#f1c40f'
-                                currentPositionStrokeWidth={4}
-                                currentPositionRadius={5}
-                                appearance={EquidistantChannelAppearance}
-                                hoverText={{
-                                    text : 'Select',
-                                    bgHeight: 'auto',
-                                    bgWidth: 'auto'
-                                }}
-                            />
+                                <EquidistantChannel
+                                    ref={this.saveInteractiveNodes("EquidistantChannel", 1)}
+                                    enabled={this.state.enableChannel}
+                                    onStart={() => console.log("START")}
+                                    onComplete={this.onDrawCompleteChart}
+                                    channels={this.state.channel}
+                                    currentPositionStroke='#f1c40f'
+                                    currentPositionStrokeWidth={4}
+                                    currentPositionRadius={5}
+                                    appearance={EquidistantChannelAppearance}
+                                    hoverText={{
+                                        text : 'Select',
+                                        bgHeight: 'auto',
+                                        bgWidth: 'auto'
+                                    }}
+                                />
 
-                            <StandardDeviationChannel
-                                ref={this.saveInteractiveNodes("StandardDeviationChannel", 1)}
-                                enabled={this.state.enableSDChannel}
-                                onStart={() => console.log("START")}
-                                onComplete={this.onDrawCompleteChart}
-                                channels={this.state.SDchannel}
-                                currentPositionStroke='#f1c40f'
-                                currentPositionStrokeWidth={4}
-                                currentPositionRadius={5}
-                                appearance={StandardDeviationChannelAppearance}
-                            />
+                                <StandardDeviationChannel
+                                    ref={this.saveInteractiveNodes("StandardDeviationChannel", 1)}
+                                    enabled={this.state.enableSDChannel}
+                                    onStart={() => console.log("START")}
+                                    onComplete={this.onDrawCompleteChart}
+                                    channels={this.state.SDchannel}
+                                    currentPositionStroke='#f1c40f'
+                                    currentPositionStrokeWidth={4}
+                                    currentPositionRadius={5}
+                                    appearance={StandardDeviationChannelAppearance}
+                                />
+                                <FibonacciRetracement
+                                    ref={this.saveInteractiveNodes("FibonacciRetracement", 1)}
+                                    enabled={this.state.enableFibRet}
+                                    retracements={this.state.FibRet}
+                                    onComplete={this.onDrawCompleteChart}
+                                    currentPositionStroke='#f1c40f'
+                                    currentPositionStrokeWidth={4}
+                                    currentPositionRadius={5}
+                                    appearance= {FibRetAppearance}
+                                />
+                                <GannFan
+                                    ref={this.saveInteractiveNodes("GannFan", 1)}
+                                    enabled={this.state.enableGannFan}
+                                    onStart={() => console.log("START")}
+                                    onComplete={this.onDrawCompleteChart}
+                                    fans={this.state.GannFan}
+                                    currentPositionStroke='#f1c40f'
+                                    currentPositionStrokeWidth={4}
+                                    currentPositionRadius={5}
+                                    appearance= {GannFanAppearance}
+                                /> 
 
-                            <FibonacciRetracement
-                                ref={this.saveInteractiveNodes("FibonacciRetracement", 1)}
-                                enabled={this.state.enableFibRet}
-                                retracements={this.state.FibRet}
-                                onComplete={this.onDrawCompleteChart}
-                                currentPositionStroke='#f1c40f'
-                                currentPositionStrokeWidth={4}
-                                currentPositionRadius={5}
-                                appearance= {FibRetAppearance}
-                            />
-
-                            <GannFan
-                                ref={this.saveInteractiveNodes("GannFan", 1)}
-                                enabled={this.state.enableGannFan}
-                                onStart={() => console.log("START")}
-                                onComplete={this.onDrawCompleteChart}
-                                fans={this.state.GannFan}
-                                currentPositionStroke='#f1c40f'
-                                currentPositionStrokeWidth={4}
-                                currentPositionRadius={5}
-                                appearance= {GannFanAppearance}
-                            /> */}
+                            </>
+                        }
 
                     </Chart>
 
-                    {/* {zoom && 
-                        this.state.chartConfig.IndicatorsArray.map((i,index) => {
-                            let series = i[1];
-                            let yExtents = i[2];
-                            let chartHeight = this.getChartHeight(height,zoom,TotalCharts);
+                    {zoom &&
+                        IndicatorChartTypeArray.map((indicator,index)=>{
+                            const [indicatordata,yAccessor,series,title,accessor,color,indicatorConfig] = getIndicatorData(indicator,data);
+
+                            let chartHeight = getChartHeight(height,zoom,TotalCharts);
                             let originHeight = (chartHeight*(index+1)) + (index+1)*10;
-                            console.log(chartHeight,originHeight);
-                            return <Chart class="my__chart" id={(index+2)} yExtents={yExtents} height={chartHeight} origin={(w,h)=>[0,originHeight]}>
-                                {index === (this.state.chartConfig.IndicatorsArray.length-1) ? 
-                                    <>
-                                        <XAxis axisAt="bottom" orient="bottom" ticks={5} tickStroke='#888888' stroke='#c8c8c8' fontWeight={600} fontFamily="Open Sans, sans-serif" fontSize={10}/>
-                                        <MouseCoordinateX at="bottom" orient="bottom" displayFormat={timeFormat("%d %b '%y")} fontFamily="Open Sans, sans-serif" fontSize={12}/>
-                                    </> : 
-                                    <>
-                                        <XAxis axisAt="bottom" orient="bottom" ticks={5} tickStroke='#888888' stroke='#c8c8c8' fontWeight={600} fontFamily="Open Sans, sans-serif" fontSize={10} showTicks={false} outerTickSize={0}/>
-                                    </>
-                                    
-                                }   
-                                <YAxis axisAt="right" orient="right" ticks={4} tickStroke='#888888' stroke='#c8c8c8' fontWeight={600} fontFamily="Open Sans, sans-serif" fontSize={10} tickFormat={format(".2f")}/>
-                                <MouseCoordinateY at="right" orient="right" displayFormat={format(".2f")} arrowWidth={0} fontFamily="Open Sans, sans-serif" fontSize={12}/>
-                                {series}
+
+
+                            return <Chart id={(index+2)} yExtents={accessor} height={chartHeight} origin={(w,h)=>[0,originHeight]} padding={5}>
+
+                                {ChartIndicators(index,indicator,width,height,range,series,title,color,indicatorConfig,yAccessor,TotalCharts,IndicatorChartTypeArray,this.props.DeleteIndicatorType,this.props.SwapCharts)}
                                 
                             </Chart>
                         })
-                    } */}
+                    }
 
-                    {zoom && <CrossHairCursor />}
 
                 </ChartCanvas>
                 </div>

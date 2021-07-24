@@ -55,7 +55,7 @@ export class UpperStock extends React.PureComponent {
 
     getIndexData()
     {
-        Axios.get(`http://${REQUEST_BASE_URL}:8000/indexdata/${this.props.Symbol}`)
+        Axios.get(`${REQUEST_BASE_URL}/indexdata/${this.props.Symbol}`)
         .then((data)=>{
             let stockArray = data.data.chartdata;
             let tempDataArray = [];
@@ -78,6 +78,8 @@ export class UpperStock extends React.PureComponent {
 
             let futuredata = getEndOfDayMinutes(lastPoint);
 
+            // console.log(futuredata);
+
             this.setState({
                 isLoading : false,
                 apidata : tempDataArray,
@@ -95,7 +97,7 @@ export class UpperStock extends React.PureComponent {
     {
         setInterval(()=>{
 
-            Axios.get(`http://${REQUEST_BASE_URL}:8000/indexdata/${this.props.Symbol}`)
+            Axios.get(`${REQUEST_BASE_URL}/indexdata/${this.props.Symbol}`)
             .then((data)=>{
                 let stockArray = data.data.chartdata;
                 let tempDataArray = [];
@@ -160,7 +162,7 @@ export class UpperStock extends React.PureComponent {
                 // console.log(convertedData.last_traded_price);
                 //get price change
 
-                if(response.data.size === convertedData.size)
+                if(response.data.size >= convertedData.size)
                 {
                     this.setState({
                         stockData : livedata,
