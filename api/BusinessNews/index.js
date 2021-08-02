@@ -1,6 +1,7 @@
 const { conn } = require('../../server/connection');
 const { SendResponse , inArray } = require("../SendResponse");
 const { StockSnapShot } = require('./SnapShot');
+const { TechnicalAnalysis } = require('./TechnicalAnalysis')
 const BusinessNews = require('express').Router();
 
 
@@ -64,9 +65,65 @@ function SnapShot(req,res){
     })
 }
 
-BusinessNews.get("/detailed_view/overview/:ric_code", Overview)
+function Technicals(req,res){
+    let exchange = req.params.exchange;
+    let code = req.params.code;
 
-BusinessNews.get("/detailed_view/snapshot/:ric_code/:nse_code/:bse_code/:exchange", SnapShot)
+    let query;
 
+    if(exchange === 'NSE')
+    {
+        query = `SELECT CLOSE FROM nse_bhav_shortened WHERE SYMBOL = '${code}' AND SERIES='EQ' ORDER BY TIMESTAMP DESC LIMIT 500`;
+    }
+    else if(exchange === 'BSE')
+    {
+        query = `SELECT CLOSE FROM bse_bhav_shortened WHERE SC_CODE = '${code}' ORDER BY TRADING_DATE DESC LIMIT 500`;
+    }
+
+    // console.log(query);
+
+    conn.query(query,(err,result)=>{
+        if(!err)
+        {
+            
+            let data = [];
+            let pricedata = [];
+            result.forEach(row => {
+                data.push({
+                    'CLOSE' : row['CLOSE']
+                });
+                pricedata.push(row['CLOSE']);
+            });
+
+            // console.log(result[0],result[result.length - 1]);
+
+            pricedata = pricedata.reverse();
+
+            // console.log(pricedata[0],pricedata[pricedata.length - 1])
+            let Analysis = new TechnicalAnalysis(pricedata,data.slice(-100),'CLOSE');
+
+            let targets = Analysis.init();
+
+            // console.log(targets);
+
+            res.json({
+                'status' : 'success',
+                'targets' : targets
+            });
+        }
+        else
+        {
+            res.json({
+                'status' : 'failure'
+            });
+        }
+    })
+}
+
+BusinessNews.get("/detailed_view/overview/:ric_code", Overview);
+
+BusinessNews.get("/detailed_view/snapshot/:ric_code/:nse_code/:bse_code/:exchange", SnapShot);
+
+BusinessNews.get("/detailed_view/technical/:exchange/:code",Technicals);
 
 exports.BusinessNews = BusinessNews

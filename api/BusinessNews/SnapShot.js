@@ -871,7 +871,7 @@ const StockSnapShot = (stock)=>{
                 snp.Beta().
                 then(response=>{
 
-                    console.log(response);
+                    // console.log(response);
                     resolve({
                         'MarketCap' : FormatValue(snp.MarketCap(),'Market_Cap','s'),
                         'PriceToEarnings' : FormatValue(snp.PriceToEarnings(),'Price_To_Earnings','rs'),

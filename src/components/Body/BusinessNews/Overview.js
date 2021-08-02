@@ -2,6 +2,7 @@ import React from 'react';
 import Website from '../../../assets/icons/website.svg';
 import '../../../scss/Overview.scss';
 import Axios from 'axios';
+import Pulse from '../../Loader/Pulse';
 
 const REQUEST_BASE_URL = process.env.REACT_APP_REQUEST_BASE_URL;
 
@@ -271,22 +272,12 @@ class Overview extends React.PureComponent {
                 }
             }
         }
-        // const btnStyle={
-        //     fontSize:'12px',
-        //     fontWeight:'bold',
-        //     background:'#2baae0',
-        //     textAlign:'center',
-        //     borderRadius:'45px',
-        //     border:'none',
-        //     padding:'4px 8px',
-        //     cursor:'pointer',
-        //     color : 'whitesmoke'
-        // }
+
         return (
-            this.state.loading?
-                <div style={{ textAlign: 'center' }}>
-                    <div className="spinner-border text-primary" ></div>
-                    <p>Please wait...</p>
+            this.state.loading ?
+                
+                <div className="bn__stock__overview__loader">
+                    <Pulse />
                 </div>
                 : this.state.error ?
                     <div style={{ textAlign: 'center' }}>

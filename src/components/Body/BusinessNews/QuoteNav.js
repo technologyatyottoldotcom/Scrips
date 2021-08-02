@@ -12,15 +12,18 @@ class Nav extends React.Component{
         }
         this.Hover = this.Hover.bind(this);
     }
-Hover(e){
- this.setState({isHovered: e});
-}
+    Hover(e){
+    this.setState({isHovered: e});
+    }
+
     render(){
+
+    // console.log(this.props)
      var navprop = {}
      for(let k in (this.props?.props || {}))if(!((this.state.navspecialAttr || []).find(ke=>ke===k)))navprop[k]=this.props?.props[k];
 
       return(
-        <ul className="menu__row row">
+        <ul className={`menu__row row ${this.props.props.menuClass ? this.props.props.menuClass || '' : ''}`}>
           {(this.props.components || [])?.map((e,i)=>
               {
                 if(e?.props){ 
@@ -39,7 +42,7 @@ Hover(e){
                             onMouseLeave={_=>this.Hover(null)}
                             onClick={d=>{typeof this.props?.props.onClick==='function'&&this.props?.props.onClick(i,d);this.setState({active:e});this.props.click(e)}} 
                             className={`col-auto ${this.props?.props?.className || ''} ${p.className || ''} ${ActiveElem ? activeClassName : ''}`} 
-                            key={i+Math.random()*9999+Date.now()} {...navprop}>{ele}
+                            key={i} {...navprop}>{ele}
                           </li>
                   }else return null
                 }

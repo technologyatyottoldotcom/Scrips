@@ -1,4 +1,5 @@
 const { conn } = require('../../server/connection');
+const Financial = require('express').Router();
 
 
 const dbTablesList = {
@@ -43,6 +44,7 @@ const GetStockCode=(code)=>{
 }
 
 function annualRemoveEmptyColumns({ fields=[] , values=[] }){
+
     var newValues = [] , deltedFields = []
     
     const CheckIfElementNotExistsInAllSubArr = index=>{
@@ -61,6 +63,7 @@ function annualRemoveEmptyColumns({ fields=[] , values=[] }){
         }
         return response
     }
+
     for(let A of values){
         let newArr = []
         if("object"==typeof A){
@@ -135,6 +138,7 @@ function FilterDbData(data=[],type,from,dField){
             for(let ki=0;ki<kl;++ki)if(!(fields.find(e=>e===k[ki])))fields.push(k[ki]);
         }
     }
+    
     if(from==='reuters'){
         if(type==='annual' ){
             var fil , newFields = []
@@ -142,7 +146,7 @@ function FilterDbData(data=[],type,from,dField){
                 if(!fil)fil = e?.split('_')[1]
                 if(fil === e?.split('_')[1] )newFields.push(e)
             })
-            fields = [...newFields]
+            fields = [...newFields];
         }
     }
     
@@ -157,6 +161,7 @@ function FilterDbData(data=[],type,from,dField){
     }
 
     var responseData = {fields:fields,values:values}
+
 
     if( type=="quartely" && from==='reuters'){
        responseData = quartelyReutersRemoveEmptyColumns(responseData)
@@ -251,6 +256,7 @@ return responseData
 }
 
 function GetdbData(type,field,stockCode,from='reuters'){
+
     const inArray = (arr,key)=>{
         var res = -1
         if(typeof arr==='object'){
@@ -278,15 +284,95 @@ function GetdbData(type,field,stockCode,from='reuters'){
             }
             let table = from==="reuters" ? ("fundamental_data_reuters_"+field+"_"+type) : from==="screener"? ('fundamental_data_screener_'+field+"_screener".toLowerCase() ): from;
 
+            // console.log(table);
             if(inArray(dbTablesList[from.toLowerCase()],table) != -1){
                 conn.query(`SELECT * FROM ${table} WHERE stockCode='${stockCode}'`,(e,r)=>{
-                    if(e)reject(e);
-                    else resolve(FilterDbData(r,type,from,field));
+                    if(e){
+                        reject(e);
+                    }
+                    else{
+                        // console.log(r);
+                        resolve(FilterDbData(r,type,from,field));
+                    }
                 })
-            }else reject('table not found')
+            }
+            else reject('table not found')
         }else reject('some fields are missing')
     })
    
+}
+
+function FilterChartData(values,indices)
+{
+
+    let fieldsarray = [];
+
+    values.forEach((val)=>{
+        // console.log(val[1]);
+        fieldsarray.push(val[1] && val[1].replace(/[^a-zA-Z ]/g, ""));
+    });
+
+    // console.log(fieldsarray);
+
+
+    let result = [];
+
+    let totalmatched = 0;
+
+
+    indices.forEach((i,indx)=>{
+
+        // console.log(values);
+
+        let checkstr = i.replace(/[^a-zA-Z ]/g, "");
+
+
+        let fieldindx = fieldsarray.findIndex((f)=> f === checkstr);
+
+
+        if(fieldindx >= 0 && totalmatched <2 )
+        {
+
+            totalmatched +=1;
+            // console.log('CHECK ',checkstr);
+            let value = values[fieldindx];
+            let title = fieldsarray[fieldindx];
+            let array = [];
+
+            for(let v=2;v<=value.length-1 ;v++)
+            {
+                array.push({
+                    'title' : title,
+                    'value' : value[v]
+                });
+            }
+
+            
+
+            result.push(array);
+        }
+
+
+    });
+
+    return result;
+
+}
+
+function FilterFields(fields)
+{
+
+    let array = [];
+    for(let v=2;v<=fields.length-1 ;v++)
+    {
+        array.push({
+            'title' : 'date',
+            'value' : fields[v]
+        });
+    }
+    
+    return array;
+
 }
 
 // begin::ratio (reuters)
@@ -335,7 +421,7 @@ const RatioFunctions = {
                     }
                     
                     const response = {
-                        fields : [...RatioFunctions.Fields(d.fields)] , 
+                        fields : ["stockCode", "fieldName",...RatioFunctions.Fields(d.fields)] , 
                         values : (length) ? [ Promoters , FIIs , DIIs , [stockCode,'Others',...Others] ] : [],
                         stockType : 'shareholding',
                         stockCode : stockCode,
@@ -1176,7 +1262,7 @@ const Ratio=(stockCode,type='reuters')=>{ //bank
             reject("table type not found ")
         }
     })
-  }
+}
   
  
 
@@ -1247,17 +1333,232 @@ const Ratio=(stockCode,type='reuters')=>{ //bank
 // })
 
 
-module.exports={
-    RatioFunctions,
-    Ratio,
-    dbTablesList,
-    GetCodeType , 
-    GetStockCode,
-    GetdbData, 
-    FilterDbData , 
-    quartelyReutersRemoveEmptyColumns ,
-    annualRemoveEmptyColumns,
-    companyType,
-    GetStockType
-}
+// only quarterly data will work
+Financial.get('/createtable/:type/:field/:stockcode', (req, res) => {
 
+    // console.log(req.params);
+    let p = req.params , fT = String(p.field).toLowerCase() , fromType = GetCodeType(p.stockcode).type
+    if(p.type==="quarterly"){
+        p.type = "quartely"
+    }
+    
+    if(fT=='ratios'){
+        Ratio(p.stockcode,fromType).then(d=>{
+            // console.log(d);
+            res.send(d)
+        }).catch(e=>{
+            console.log('err__ = ',e)
+        })
+    }else if(fT=='shareholding'){
+        RatioFunctions.getShareHoldingPattern(p.stockcode) //screener stockcode
+        .then(d=>{
+            // console.log("shareholdeing = ",d.Fields)
+            // console.log(d);
+            res.send(d)
+        }).catch(e=>{
+            console.log("getShareHoldingPattern = ",e)
+        })
+    }else{
+        GetdbData(p.type,p.field,p.stockcode,fromType).then(d=>{
+            if(typeof d=='string'){d = JSON.parse(d)}
+            if(!d){d = {}};
+
+            if(d?.fields?.length > 2 ){  
+                d.from = fromType
+                d.type = GetStockType(d?.values || [] , fromType=="screener" ? companyType.Screener : companyType.Reuters) || 'common'
+                res.send(d)     //response sended
+            }else {
+                console.log('run = ',2)
+                GetStockCode(p.stockcode).then(({ ric_code , bse_code , nse_code})=>{
+                        const senD = (sCode,from)=>{
+                            
+                            if(from=='screener'){
+                                p.type = ""
+                                if(p.field=="income"){
+                                    p.field = "profitloss"
+                                }else  if(p.field=="cashflow"){
+                                    p.field = "cashflows"
+                                }
+                            }
+                            
+                            GetdbData(p.type,p.field,sCode,from).then(d=>{
+                              if(typeof d=='string'){d = JSON.parse(d)}
+                              if(!d){d = {}};
+                                d.from = from
+                                d.type = GetStockType(d?.values || [] , from=='screener' ? companyType.Screener : companyType.Reuters) || 'common'
+                                res.send(d)
+                            }).catch(e=>{
+                                console.log('error  = ',e)
+                                res.send(e)
+                            })
+                        }
+
+                    if(fromType=='reuters'){
+                          senD(nse_code || bse_code ,"screener")  // screener
+                    }else {// reuters
+                        senD( ric_code,"reuters") 
+                    }
+
+                }).catch(e=>{
+                    res.send(e)
+                })
+            }
+        }).catch(e=>{
+            console.log("er = ",e)
+            res.send(e)
+        })
+    }
+    
+    // console.log("req_data = ",p)
+    
+});
+
+
+Financial.get('/createcharts/:field/:type/:stockcode',(req,res)=>{
+
+    let type = req.params.type;
+    let field = req.params.field;
+    let stockcode = req.params.stockcode;
+    let fromtype = GetCodeType(stockcode).type;
+
+    if(field === 'ratios')
+    {
+
+        // console.log('IN RATIO');
+        Ratio(stockcode,fromtype).then(d=>{
+
+            let fields = FilterFields(d.fields);
+            let values = FilterChartData(d.values,['ROE','ROCE']);
+            res.json({
+                'fields' : fields,
+                'values' : values
+            })
+        }).catch(e=>{
+            console.log(e);
+            res.json({
+                'status' : 'failure',
+                'message' : e.message
+            });
+        });
+    }
+
+    else if(field === 'shareholdings')
+    {
+
+        // console.log('IN SHAREHOLDING');
+
+        RatioFunctions.getShareHoldingPattern(stockcode) //screener stockcode
+        .then(d=>{
+
+            let fields = FilterFields(d.fields);
+            let values = FilterChartData(d.values,['Promoters']);
+            res.json({
+                'fields' : fields,
+                'values' : values
+            })
+        }).catch(e=>{
+            console.log(e);
+            res.json({
+                'status' : 'failure',
+                'message' : e.message
+            });
+        })
+    }
+
+    else if(field === 'income')
+    {
+
+        // console.log('IN INCOME');
+
+        // console.log(fromtype);
+
+        GetdbData(type,'income',stockcode,fromtype).then(d=>{
+
+            let fields = FilterFields(d.fields);
+            let values = FilterChartData(d.values,['Net Income','Revenue','Sales','Interest','Total Revenue','Interest Income Bank']);
+            res.json({
+                'fields' : fields,
+                'values' : values
+            });
+        }
+        ).catch(e => {
+            console.log(e);
+            res.json({
+                'status' : 'failure',
+                'message' : e.message
+            });
+        });
+    }
+
+});
+
+Financial.get('/creditrating/:stockcode',(req,res)=>{
+    let stockcode = req.params.stockcode;
+
+    // console.log(stockcode);
+
+    conn.query(`SELECT screener_ratings_title1 AS TITLE1,screener_ratings_link1 AS LINK1,screener_ratings_date1 AS DATE1,
+    screener_ratings_title2 AS TITLE2,screener_ratings_link2 AS LINK2,screener_ratings_date2 AS DATE2,
+    screener_ratings_title3 AS TITLE3,screener_ratings_link3 AS LINK3,screener_ratings_date3 AS DATE3 FROM stock_list_master_reuters_screener
+    WHERE ric_code="${stockcode}"`,(err,result)=>{
+        if(!err)
+        {
+            if(result.length > 0)
+            {
+                let row;
+
+                result.forEach((r)=>{
+                    row = r;
+                });
+
+                // console.log(row);
+
+                let credit = [];
+
+                for(let i=1;i<=3;i++)
+                {
+                    if(row['TITLE'+i] !== '')
+                    {
+                        credit.push({
+                            'title' : row['TITLE'+i],
+                            'link' : row['LINK'+i],
+                            'date' : row['DATE'+i],
+                        })
+                    }
+                }
+
+                res.json({
+                    'status' : 'success',
+                    'credit' : credit
+                });
+            }
+        }
+        else
+        {
+            res.json({
+                'status' : 'failure',
+                'error' : err.message
+            })
+        }
+    })
+})
+
+
+
+// module.exports={
+//     RatioFunctions,
+//     Ratio,
+//     dbTablesList,
+//     GetCodeType , 
+//     GetStockCode,
+//     GetdbData, 
+//     FilterDbData , 
+//     FilterChartData,
+//     FilterFields,
+//     quartelyReutersRemoveEmptyColumns ,
+//     annualRemoveEmptyColumns,
+//     companyType,
+//     GetStockType
+// }
+
+exports.Financial = Financial;

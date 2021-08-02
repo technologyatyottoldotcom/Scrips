@@ -258,7 +258,7 @@ export class ChartContainer extends React.PureComponent {
             let lastPoint = this.state.chartProps.lastPoint;
             let startUNIX = dateToUNIX(lastPoint.date,type);
 
-            console.log(lastPoint.date);
+            // console.log(lastPoint.date);
 
             // console.log(startUNIX,type,ct,dd);
 
@@ -294,7 +294,7 @@ export class ChartContainer extends React.PureComponent {
                 {
                     
                     let stockArray = data.data;
-                    console.log(stockArray.length);
+                    // console.log(stockArray.length);
                     if(stockArray.length > 0)
                     {
                         let tempDataArray = this.state.chartProps.chartdata;
@@ -384,7 +384,7 @@ export class ChartContainer extends React.PureComponent {
 
             const Stocks = this.props.CompareStockConfig;
 
-            const requests = Stocks.map( s=> axios.get(`http://localhost:9000/stockdata?ct=${candle}&starttime=${unixtime}&dd=${duration}&exchange=${s.exchange.exchange}&token=${s.code}&code=${s.symbol}&mixed=${mixed}&type=${type}`).catch(err => null))
+            const requests = Stocks.map( s=> axios.get(`${REQUEST_BASE_URL}/stockdata?ct=${candle}&starttime=${unixtime}&dd=${duration}&exchange=${s.exchange.exchange}&token=${s.code}&code=${s.symbol}&mixed=${mixed}&type=${type}`).catch(err => null))
 
             // console.log(requests);
 
@@ -566,7 +566,7 @@ export class ChartContainer extends React.PureComponent {
     {
         let startUNIX = convertToUNIX(type);
         // console.log(startUNIX);
-        axios.get(`http://localhost:9000/stockdata`,{
+        axios.get(`${REQUEST_BASE_URL}/stockdata`,{
           params : {
             'ct' : ct,
             'starttime' : startUNIX,
@@ -638,7 +638,7 @@ export class ChartContainer extends React.PureComponent {
 
         let startUNIX = convertToUNIX(type);
 
-        axios.get(`http://localhost:9000/stockdata`,{
+        axios.get(`${REQUEST_BASE_URL}/stockdata`,{
           params : {
             'ct' : ct,
             'starttime' : startUNIX,
@@ -720,7 +720,7 @@ export class ChartContainer extends React.PureComponent {
 
             const Stocks = this.props.CompareStockConfig;
 
-            const requests = Stocks.map( s=> axios.get(`http://localhost:9000/stockdata?ct=${candle}&starttime=${startUNIX}&dd=${duration}&exchange=NSE&token=${s.code}&code=${s.symbol}&mixed=${mixed}&type=${type}`).catch(err => null))
+            const requests = Stocks.map( s=> axios.get(`${REQUEST_BASE_URL}/stockdata?ct=${candle}&starttime=${startUNIX}&dd=${duration}&exchange=NSE&token=${s.code}&code=${s.symbol}&mixed=${mixed}&type=${type}`).catch(err => null))
 
             console.log(requests);
 
@@ -1206,16 +1206,22 @@ export class ChartContainer extends React.PureComponent {
         let stockData = this.props.stockData;
 
         let TradePrice = this.convertIntoPriceFormat(stockData.last_traded_price);
-        let dPrice = (TradePrice+'').split('.')[0];
-        let fPrice = (TradePrice+'').split('.')[1];
 
-        let change_price = parseFloat(stockData.change_price);
-        let change_percentage = parseFloat(stockData.change_percentage);
+        let dPrice,fPrice,change_price,change_percentage,priceClass;
+        
+        if(TradePrice && TradePrice !== 'undefined')
+        {
+            dPrice = (TradePrice+'').split('.')[0];
+            fPrice = (TradePrice+'').split('.')[1];
 
-        // console.log(change_price,change_percentage);
-        // console.log(typeof change_price,typeof change_percentage);
+            change_price = parseFloat(stockData.change_price);
+            change_percentage = parseFloat(stockData.change_percentage);
 
-        let priceClass = change_price >= 0 ? 'positive' : 'negative';
+            // console.log(change_price,change_percentage);
+            // console.log(typeof change_price,typeof change_percentage);
+
+            priceClass = change_price >= 0 ? 'positive' : 'negative';
+        }
 
         let stockName = this.props.stockDetails.stockExchange.exchange === 'NSE' ? this.props.stockDetails.stockNSECode : this.props.stockDetails.stockBSECode; 
         
@@ -1368,17 +1374,23 @@ export class ChartContainer extends React.PureComponent {
                                             />
                                         })}
                                     </div>
-                                    <div className={priceClass +' stock__performance__percentage'} style={{display : 'flex'}}>
-                                        ({stockData.change_percentage &&
-                                            stockData.change_percentage.split('').map((n,i) => {
-                                                return <AnimatedDigit 
-                                                digit={n} 
-                                                size={18} 
-                                                key={i}
-                                                digitMargin={-0.8}
-                                            />
-                                        })})
-                                    </div>
+
+                                    {stockData.change_percentage && 
+                                        
+                                        <div className={priceClass +' stock__performance__percentage'} style={{display : 'flex'}}>
+                                            ({
+                                                stockData.change_percentage.split('').map((n,i) => {
+                                                    return <AnimatedDigit 
+                                                    digit={n} 
+                                                    size={18} 
+                                                    key={i}
+                                                    digitMargin={-0.8}
+                                                />
+                                            })})
+                                        </div>
+                                        
+                                    }
+                                    
                                     
                                     {/* <ChartClock /> */}
                                 </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import Axios from 'axios';
 import $ from 'jquery';
+import ScripsFooter from '../Footer/ScripsFooter';
 import Close from '../../assets/icons/close.svg';
 import CashPosition from './CashPosition/CashPosition';
 import ChartContainer from './ChartContainer';
@@ -15,11 +16,8 @@ import Research from './MenuSection/Research';
 import Exit from './MenuSection/Exit';
 import { BusinessNews } from './BusinessNews/BusinessNews';
 import {readMarketData,readMarketStatus,setChange} from '../../exports/FormatData';
-import {getCandleDuration} from '../../exports/MessageStructure';
-import {splitAdjustment} from '../../exports/SplitAdjustment';
-import {getFuturePoints,getStartPointIndex,filterBigData} from '../../exports/FutureEntries';
-import {convertToUNIX,dateToUNIX} from '../../exports/TimeConverter';
 import { setStockColor,getStockColor } from '../../exports/ChartColors';
+import Logout from '../../assets/icons/logout.svg';
 import '../../css/BusinessNews.css';
 import '../../css/MenuSection.css';
 import '../../css/CustomChartComponents.css';
@@ -274,14 +272,18 @@ class ScripsBody extends React.PureComponent
 
     openNews()
     {
-        $('.business__news__section').css('transform','translateY(0%)');
+        $('.business__news__section').addClass('open');
+        $('.business__news__content').css('display','block');
         $('.bn__close').addClass('active');
     }
 
     closeNews()
     {
-        $('.business__news__section').css('transform','translateY(100%)');
+        $('.business__news__section').removeClass('open');
         $('.bn__close').removeClass('active');
+        setTimeout(()=>{
+            $('.business__news__content').css('display','none');
+        },1000)
     }
 
     setRange(range)
@@ -290,6 +292,7 @@ class ScripsBody extends React.PureComponent
             range : range            
         });
     }
+
 
     /*<--- Compare Functionality Methods --->*/
     compareStock(code,name,symbol,company,exchange)
@@ -408,12 +411,22 @@ class ScripsBody extends React.PureComponent
                                     stockDetails={this.state.stockDetails}
                                     stockData={this.state.stockData}
                                     snapdata={this.state.snapdata}   
-                                    />
+                                />
                             </div>
                             
                         </div>
                         
                     </div>
+
+                    <div className="app__body__footer">
+                        <ScripsFooter />
+                    </div>
+
+                    <div className="app__body__logout">
+                        <img src={Logout} alt="->"/>
+                        <span>Logout</span>
+                    </div>
+
                     {this.props.isActive &&
                         <div className="menu__section">
                             <div className="menu__section__wrapper">
@@ -466,6 +479,7 @@ class ScripsBody extends React.PureComponent
                         <CashPosition />
                     </div>
                 </div>
+
 
             </div>
            

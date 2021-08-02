@@ -36,6 +36,19 @@
   box-shadow: 3px 3px 10px rgba(0,0,0,.02) , -3px -3px 10px rgba(0,0,0,.02);
 }
 
+.app__body .app__body__left .app__StocksToWatch.loader
+{
+  position: relative;
+  height: 12%;
+  width: 100%;
+  border-radius: 3;
+  background-color: var(--white);
+  box-shadow: 3px 3px 10px rgba(0,0,0,.02) , -3px -3px 10px rgba(0,0,0,.02);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .app__body .app__body__left .app__StocksToWatch .app__StocksToWatch__header
 {
     padding: 2px 20px;

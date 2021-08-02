@@ -1,6 +1,7 @@
 import React from 'react';
 import Statistics from './Statistics';
 import Spinner from '../../Loader/Spinner';
+import Pulse from '../../Loader/Pulse';
 
 export class KeyStatistics extends React.PureComponent {
 
@@ -117,8 +118,9 @@ export class KeyStatistics extends React.PureComponent {
         }
         else
         {
-            return <div className="key__statistics">
-                <Spinner size={30}/>
+            return <div className="key__statistics loader">
+                {/* <Spinner size={30}/> */}
+                <Pulse />
             </div>
         }
     }

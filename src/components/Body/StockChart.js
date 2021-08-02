@@ -229,7 +229,7 @@ export class StockChart extends React.PureComponent {
 
         calculatedData = CalculateIndicatorData(this.props.IndicatorChartTypeArray,dataToCalculate);
 
-        console.log(calculatedData[calculatedData.length - 1])
+        // console.log(calculatedData[calculatedData.length - 1])
 
         /* SERVER - START */
 
@@ -695,7 +695,7 @@ export class StockChart extends React.PureComponent {
 
         if(this.state.data)
         {
-            console.log('---RENDER CHART---')
+            // console.log('---RENDER CHART---')
             const {type,width,height,ratio,range,zoom,chartType,TotalCharts,IndicatorChartTypeArray,trendLineType} = this.props;
 
             let { data, xScale, xAccessor, displayXAccessor } = this.state;

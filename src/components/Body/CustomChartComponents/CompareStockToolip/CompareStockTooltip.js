@@ -49,7 +49,7 @@ export class CompareStockTooltip extends Component {
             return (
                 <g className={className} transform={`translate(${ x }, ${ y })`} onClick={onClick}>
                     <svg width="240" height="22">
-                        <rect width="240" height="22" fill='none' rx={3} style={{
+                        <rect width="240" height="22" fill='#ffffff' rx={3} style={{
                             stroke : '#cccccc'
                         }}/>
                     </svg>
@@ -85,7 +85,7 @@ export class CompareStockTooltip extends Component {
             return (
                 <g className={className} transform={`translate(${ x }, ${ y })`} onClick={onClick}>
                     <svg width="240" height="22">
-                        <rect width="240" height="22" fill='none' rx={3} style={{
+                        <rect width="240" height="22" fill='#ffffff' rx={3} style={{
                             stroke : '#cccccc'
                         }}/>
                     </svg>

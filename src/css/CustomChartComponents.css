@@ -19,3 +19,11 @@
   cursor: pointer;
 
 }
+
+
+/* recharts components */
+
+.recharts-legend-item 
+{ 
+  font-size: 10px; 
+}

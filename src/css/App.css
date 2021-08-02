@@ -86,7 +86,7 @@
 .app .indicator__limit__popup
 {
   position: absolute;
-  top: -10%;
+  top: -20%;
   left: 50%;
   transform: translateX(-50%);
   padding: 0px 15px 0px 0;
@@ -342,7 +342,7 @@
 {
   overflow: hidden;
   padding: 0 19%;
-  height: 90vh;
+  height: 93vh;
 }
 
 
@@ -368,6 +368,15 @@
   font-weight: 700;
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.app__body__top .top__stocks .upper__stock.loader
+{
+  flex: 1;
+  display: flex;
+  justify-content: center;
   align-items: center;
   position: relative;
 }
@@ -431,7 +440,7 @@
   height: 92%;
   background-color: var(--light-white);
   display: flex;
-  align-items: center;
+  /* align-items: center; */
   position: relative;
   justify-content: space-between;
 }
@@ -447,11 +456,43 @@
   padding: 0px;
 }
 
+.app__body__bottom .app__body__footer
+{
+  position: absolute;
+  z-index: 10000;
+  bottom: 0.5%;
+  left: -15%;
+}
+
+.app__body__bottom .app__body__logout
+{
+  position: absolute;
+  left: 101%;
+  bottom: 1%;
+  display: flex;
+  align-items: center;
+}
+
+.app__body__bottom .app__body__logout img
+{
+  width: 20px;
+  transform: rotate(180deg);
+  margin-right: 5px;
+}
+
+.app__body__bottom .app__body__logout span
+{
+  font-size: 12px!important;
+  font-weight: 700!important;
+  letter-spacing: -0.5px;
+  color: var(--font-primary);
+
+}
 
 .app__body .app__body__left 
 {
   width: 69%;
-  height: 98%;
+  height: 96%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -548,8 +589,8 @@
 
 .app__body .app__body__left .Indicator__popup .Indicator__options .Indicator__option__block 
 {
+  position: relative;
   width: 100%;
-  padding: 5px 30px 5px 30px;
   border-bottom: 0.5px solid #eeeeee;
   display: flex;
   justify-content: space-between;
@@ -562,6 +603,14 @@
   background-color: #f5f5f5;
 }
 
+.app__body .app__body__left .Indicator__popup .Indicator__options .Indicator__option__block .indicator__option__title
+{
+  width: 100%;
+  height: 100%;
+  padding: 10px 30px 10px 30px;
+  /* background-color: #00A0E3; */
+} 
+
 .app__body .app__body__left .Indicator__popup .Indicator__options .Indicator__option__block p 
 {
   font-size: 16px;
@@ -573,7 +622,7 @@
   display: flex;
   align-items: center;
 }
-
+/* 
 .app__body .app__body__left .Indicator__popup .Indicator__options .Indicator__option__block>div button 
 {
   border: none;
@@ -588,10 +637,14 @@
   font-size: 14px;
   font-weight: 600;
   color: #000000;
-}
+} */
 
 .app__body .app__body__left .Indicator__popup .Indicator__options .Indicator__option__block>div span 
 {
+  position: absolute;
+  top: 50%;
+  right : 2%;
+  transform: translate(-50%,-50%);
   background-color: #ffffff;
   border-radius: 50%;
   width: 30px;
@@ -1301,6 +1354,13 @@
   position: relative;
 }
 
+.app__body .app__body__left .key__statistics.loader
+{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .app__body .app__body__left .key__statistics.key__statistics__zoom 
 {
   height: 15%;
@@ -1421,7 +1481,7 @@
 .app__body .app__body__right 
 {
   width: 30%;
-  height: 98%;
+  height: 96%;
 }
 
 .app__body .app__body__right.app__body__right__zoom 
@@ -1432,14 +1492,10 @@
 /*app__footer*/
 .app__footer 
 {
-  /* position: absolute; */
-  /* bottom: 0; */
   width: 100%;
-  height: 3vh;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 180px;
   background-color: var(--light-white);
 }
 

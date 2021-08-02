@@ -2,6 +2,7 @@ import React from 'react';
 import Axios from 'axios';
 import $ from 'jquery';
 import Spinner from '../../Loader/Spinner';
+import Pulse from '../../Loader/Pulse';
 import CreateSection from './CreateSection';
 import Chevron from '../../../assets/icons/chevron.svg';
 import '../../../css/StocksToWatch.css';
@@ -157,8 +158,9 @@ class StocksToWatch extends React.PureComponent {
         else
         {
             return (
-                <div className="app__StocksToWatch">
-                    <Spinner size={20}/>
+                <div className="app__StocksToWatch loader">
+                    {/* <Spinner size={20}/> */}
+                    <Pulse />
                 </div>
             )
         }

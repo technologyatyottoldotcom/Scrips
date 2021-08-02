@@ -1,7 +1,6 @@
 import React from 'react';
 import { Row, Col, Slider , RangeSlider } from 'rsuite';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,LabelList, Legend, ResponsiveContainer } from 'recharts';
-import $ from 'jquery';
 import '../../../scss/Valuation.scss';
 
 function EarningValuation({ title, value, max, min, changeSliderValue}) {
@@ -13,7 +12,6 @@ function EarningValuation({ title, value, max, min, changeSliderValue}) {
 
     let stop = ((Math.ceil(val)-min)/(max-min))*100;
     let back = `linear-gradient(to right,#00a0e3 0%,#00a0e3 ${stop}%,#ecf0f1 ${stop}%,#ecf0f1 100%)`;
-
 
     return (
         <>

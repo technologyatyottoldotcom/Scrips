@@ -10,10 +10,10 @@ class Financials extends React.PureComponent {
             
             <div className="bn__stock__financials">
                 <div className="financials__left">
-                    <FinanceLeft />
+                    <FinanceLeft stockDetails={this.props.stockDetails}/>
                 </div>
                 <div className="financials__right">
-                    <FinanceRight />
+                    <FinanceRight stockDetails={this.props.stockDetails}/>
                 </div>
         </div>
 

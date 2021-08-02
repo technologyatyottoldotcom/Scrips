@@ -49,7 +49,7 @@ class App extends React.Component
 
   selectedStock(data)
   {
-      console.log(data);
+      // console.log(data);
       let StockCode = data.code;
       if(StockCode && typeof StockCode === 'string' && StockCode!== '')
       {
@@ -73,7 +73,7 @@ class App extends React.Component
   render()
   {
 
-    console.log(this.state.stockDetails);
+    // console.log(this.state.stockDetails);
     return (
       <div className="app">
 

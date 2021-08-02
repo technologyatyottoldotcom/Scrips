@@ -6,6 +6,7 @@ import AnimatedDigit from '../AnimatedDigit';
 import {readMarketData} from '../../../exports/FormatData';
 import {getEndOfDayMinutes} from '../../../exports/FutureEntries';
 import Spinner from '../../Loader/Spinner';
+import Pulse from '../../Loader/Pulse';
 
 const REQUEST_BASE_URL = process.env.REACT_APP_REQUEST_BASE_URL;;
 
@@ -233,8 +234,9 @@ export class UpperStock extends React.PureComponent {
 
         return (
             this.state.isLoading ? 
-            <div className="upper__stock">
-                <Spinner size={20}/>
+            <div className="upper__stock loader">
+                {/* <Spinner size={20}/> */}
+                <Pulse />
             </div>
             :
             <div className="upper__stock">

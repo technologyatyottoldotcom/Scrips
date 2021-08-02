@@ -13,11 +13,24 @@ class FinanceLeft extends React.PureComponent {
         this.state = {
             type: 'annual', // annual , quarterly
             field: 'balancesheet', //profit&loass , balancesheet , cashflows , ratios
-            stockcode: "RELI.NS",//RELI.NS //HDFCBANK
+            stockcode: this.props.stockDetails.stockSymbol,//RELI.NS //HDFCBANK
             from : 'reuters' // reuters // screener
         }
     }
+
+    componentDidUpdate(prevProps)
+    {
+        if(prevProps.stockDetails.stockSymbol !== this.props.stockDetails.stockSymbol)
+        {
+            console.log('UPDATE CREATE TABLE CODE');
+            this.setState({
+                stockcode : this.props.stockDetails.stockSymbol
+            });
+        }
+    }
+
     render() {
+        
         var field = this.state.field;
         return (
                 <>

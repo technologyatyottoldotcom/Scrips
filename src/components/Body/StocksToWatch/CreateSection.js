@@ -1,4 +1,5 @@
 import React from 'react';
+import AnimatedDigit from '../AnimatedDigit';
 import {readMarketData} from '../../../exports/FormatData';
 
 const SVGIMG1 = {
@@ -148,7 +149,17 @@ export class CreateSection extends React.PureComponent {
                         <div className="StocksToWatch__stock__fullname">{fullName}</div>
                     </div>
                     <div className="StocksToWatch__stock__favourite">
-                        <span className={priceClass+' StocksToWatch__change__per'}>{stockData.change_percentage}</span>
+                        <span className={priceClass+' StocksToWatch__change__per'} style={{display : 'flex'}}>
+                        {stockData.change_percentage &&
+                            stockData.change_percentage.split('').map((n,i) => {
+                                return <AnimatedDigit 
+                                digit={n} 
+                                size={16} 
+                                key={i}
+                                digitMargin={0}
+                            />
+                        })}
+                        </span>
                         <span className="StocksToWatch__stock__star">
                             {<SVGIMG1.Star isFav={this.props.isFavorite} />}
                         </span>

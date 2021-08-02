@@ -6,12 +6,13 @@ export class Indicator extends React.PureComponent {
         const {IndicatorName,IndicatorInfo,ChangeIndicatorType,InfoType} = this.props;
 
         return (
-            <div className="Indicator__option__block" onClick={()=>{
+            <div className="Indicator__option__block">
+                <div className="indicator__option__title"  onClick={()=>{
                 ChangeIndicatorType(InfoType);
             }}>
-                <p>{IndicatorName}</p>
+                    <p>{IndicatorName}</p>
+                </div>
                 <div>
-                    {/* <button onClick={()=>ChangeIndicatorType(InfoType)}>Add Indicator</button> */}
                     <span onClick={()=>IndicatorInfo(InfoType)} data-info={InfoType}>?</span>
                 </div>
             </div>

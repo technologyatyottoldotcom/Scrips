@@ -6,14 +6,14 @@ class BalanceSheet extends React.PureComponent {
     constructor(props){
         super(props);
         this.state = {
-            action : 1
+            action : 0 // 0 for condensed, 1 for detailed
         }
     }
     
     render() {
         return (
             <>
-              <RightNav childrens={['Condensed', 'Detailed']} active={this.state.action} setAction={i=>{this.setState({ action : i })}} />
+              {/* <RightNav childrens={['Condensed', 'Detailed']} active={this.state.action} setAction={i=>{this.setState({ action : i })}} /> */}
               <CreateTable type={this.props.type} field={this.props.field} action={this.state.action ? 'detailed' : 'condensed'} stockcode={this.props.stockcode} />
             </>
         )

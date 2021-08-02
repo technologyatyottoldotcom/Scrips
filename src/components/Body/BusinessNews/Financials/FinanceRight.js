@@ -1,19 +1,16 @@
 import React from 'react';
 import { CreditRatings } from './CreditRatings';
-import { BusinessChart } from './BusinessChart';
+import ChartContainer from './ChartContainer';
 
 class FinanceRight extends React.PureComponent {
     render() {
         return (
             <>
-                <div className="credit__ratings" style={{ minWidth : '80%' ,position: 'relative',  overflow: 'scroll', overflowX: 'hidden', scrollBehavior: 'smooth', fontSize: '14px' }}>
-                    <div style={{fontWeight:'bold'}}>Credit ratings</div>
-                    <CreditRatings />
+                <div className="credit__ratings">
+                    <CreditRatings stockcode={this.props.stockDetails.stockSymbol}/>
                 </div>
                 <div className="credit__charts GlobalScrollBar" style={{ top : 5, paddingBottom:15 , position: 'relative', height: 220, overflowY: 'scroll', scrollBehavior: 'smooth' }}>
-                    <BusinessChart />
-                    <BusinessChart />
-                    <BusinessChart />
+                    <ChartContainer stockDetails={this.props.stockDetails}/>
                 </div>
             </>
         )

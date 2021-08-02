@@ -1,154 +1,171 @@
 import React from 'react';
-import { RangeSlider } from 'rsuite';
+import Axios from 'axios';
 import '../../../scss/Technicals.scss';
 import learning from "../../../assets/icons/learning.svg" //new (MK)
+import CustomSlider from '../CustomChartComponents/CustomSlider/CustomSlider';
+
+const REQUEST_BASE_URL = process.env.REACT_APP_REQUEST_BASE_URL;
+
+const marksa = [
+    {
+      value: -2,
+      label: 'Strong Sell',
+    },
+    {
+      value: -1,
+      label: 'Sell',
+    },
+    {
+      value: 0,
+      label: 'Neutral',
+    },
+    {
+        value: 1,
+        label: 'Buy',
+    },
+    {
+        value: 2,
+        label: 'Strong Buy',
+    },
+];
+
+const marksb = [
+    {
+      value: -2,
+      label: 'Sell',
+    },
+    {
+        value: 0,
+        label: 'Neutral',
+      },
+    {
+      value: 2,
+      label: 'Buy',
+    },
+];
 
 
-class CustomSteps extends React.PureComponent {
+class TechnicalsViews extends React.PureComponent {
+    render()
+    {
+        // console.log(this.props.targets);
 
-    constructor(props) {
-        super(props);
-        this.state = {
-            printText: this.props.printText || ['Strong Sell', 'Sell', 'Neutral', 'Buy', 'Strong Buy'],
-            active: (this.props.active && !Number(this.props.active)) ? this.state.printText.findIndex(e => e === this.props.active) : this.props.active
+        const targets = this.props.targets;
+        return (
+            <>
+                <div className="bn__stock__tech__view">
+                    <div className="bn__stock__slider__wrapper">
+                        <p className="bn__stock__view__title">Short Term Technical View</p>
+                        <div className="bn__stock__slider">
+                            <CustomSlider min={-2} max={2} value={targets.STTV.point || 0} marks={marksa}/>
+                        </div>
+                    </div>
+                    <div className="bn__stock__text">
+                        <p>5 Day MA <br /><span>{targets.STTV.text1 && targets.STTV.text1}</span><br /> 10 Day MA</p>
+                        <p>10 Day MA <br /><span>{targets.STTV.text2 && targets.STTV.text2}</span><br /> 20 Day MA</p>
+                    </div>
+                </div>
+                <div className="bn__stock__tech__view">
+                    <div className="bn__stock__slider__wrapper">
+                        <p className="bn__stock__view__title">Long Term Technical View</p>
+                        <div className="bn__stock__slider">
+                            <CustomSlider min={-2} max={2} value={targets.LTTV.point || 0} marks={marksa}/>
+                        </div>
+                    </div>
+                    <div className="bn__stock__text">
+                        <p>20 Day MA <br /><span>{targets.LTTV.text1 && targets.LTTV.text1}</span><br /> 50 Day MA</p>
+                        <p>50 Day MA <br /><span>{targets.LTTV.text2 && targets.LTTV.text2}</span><br /> 100 Day MA</p>
+                    </div>
+                </div>
+                <div className="bn__stock__tech__view">
+                    <div className="bn__stock__slider__wrapper">
+                        <p className="bn__stock__view__title">Relative Strength Index (RSI)</p>
+                        <div className="bn__stock__slider">
+                            <CustomSlider min={-2} max={2} value={targets.RSIV.point || 0} marks={marksa} short={false}/>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bn__stock__tech__view small">
+                    <div className="bn__stock__slider__wrapper">
+                        <p className="bn__stock__view__title">Moving Average Convergence Divergence (MACD)</p>
+                        <div className="bn__stock__slider">
+                            <CustomSlider min={-2} max={2} value={targets.MACDV.point || 0} marks={marksb} short={true}/>
+                        </div>
+                    </div>
+                </div>
+            </>
+        )
+    }
+}
+
+
+class TechnicalsTargets extends React.PureComponent {
+
+    convertIntoPriceFormat(num,frac=1)
+    {
+        if(num)
+        {
+            return num.toLocaleString('en-IN',{
+                minimumFractionDigits: frac,
+                currency: 'INR'
+            });
+        }
+        else
+        {
+            return num;
         }
     }
 
-    render(props) {
-        const len = this.state.printText.length;
+    render()
+    {
+
+        const targets = this.props.targets;
+
+
         return (
             <>
-                <div className="stock__view__slider">
-                    <RangeSlider
-
-                        barClassName='custome-slider'
-                        min={0}
-                        max={len-1}
-                        value={[0,this.state.active]}
-                        defaultValue={[0,1]}
-                        className="custom-slider-Technical"
-                        graduated
-                        progress
-                        tooltip={false}
-                        renderMark={n =>
-                            <span style={{fontSize : '11px' , fontWeight : '700'}}>{this.state.printText[n]}</span>
-                        }
-                    />
-                </div>
-            </>
-        )
-    }
-}
-
-
-class FirstSection extends React.PureComponent {
-    render() {
-        
-        return (
-            <>
-                <div className="stock__view">
-                    <div className="view__name">Short Term Technical View</div>
-                    <CustomSteps active={1} />
-                </div>
-                <div className="stock__view">
-                    <div className="view__name">Long Term Technical View</div>
-                    <CustomSteps active={1} />
-                </div>
-                <div className="stock__view">
-                    <div className="view__name">Relative Strength Index (RSI)</div>
-                    <div style={{ maxWidth: 100 }}>
-                        <CustomSteps printText={["Buy", "Sell"]} active={1} width={100} />
+                <div className="bn__stock__target__price">
+                    <div className="bn__stock__target__genie">
+                        <img src={learning} alt="AI_ML_GENIE_LOGO" />
+                        <p>AI & ML Genie</p>
                     </div>
-                </div>
-                <div className="stock__view">
-                    <div className="view__name">Moving Average Convergence Divergence (MACD)</div>
-                    <div style={{ maxWidth: 100 }}>
-                        <CustomSteps printText={["Buy", "Sell"]} active={1} width={100} />
-                    </div>
-                </div>
-            </>
-        )
-    }
-}
-
-class CenterSection extends React.PureComponent {
-
-    render() {
-        return (
-            <>
-                <div className="p-0 m-0" style={{ fontSize: 12 }}>
-                    <div className="mb-3">
-                        <p>  5 Day MA &nbsp;
-                            <br />
-                            <b style={{ color: '#E51A4B' }}> is lower than </b>
-                            <br />
-                            20 Day MA.
-                        </p>
-                    </div>
-
-                    <div className="mb-3">
-                        <p>  5 Day MA &nbsp;
-                            <br />
-                            <b style={{ color: '#E51A4B' }}> is lower than </b>
-                            <br />
-                            20 Day MA.
-                        </p>
-                    </div>
-
-                    <div className="mb-3">
-                        <p>  5 Day MA &nbsp;
-                            <br />
-                            <b style={{ color: '#E51A4B' }}> is lower than </b>
-                            <br />
-                            20 Day MA.
-                        </p>
-                    </div>
-                </div>
-
-            </>
-        )
-    }
-}
-
-class LastSection extends React.PureComponent {
-    render() {
-        return (
-            <>
-                <div style={{ fontSize: 13 }}>
-                    <div className="row">
-                        <div className="col-4 p-0 m-0">
-                            <img src={learning} width={150} className="img-fluid p-3" alt="AI_ML_GENIE_LOGO" />
+                    {targets.FPV.Enough ? 
+                        
+                        <div className="bn__stock__target__value">
+                            <p>Price Target For 
+                                <br /> 
+                                <span>{targets.FPV.Days} Days</span> 
+                                <br /> 
+                                is 
+                                <br />
+                                <span>Rs. {this.convertIntoPriceFormat(targets.FPV.FutureAmount)} </span>
+                                <span className={targets.FPV.FuturePer >= 0 ? "bn__stock__target__change positive" : "bn__stock__target__change negative"}>({this.convertIntoPriceFormat(targets.FPV.FuturePer)}%)</span>
+                            </p>
+                            <p className={targets.FPV.Confidence >= 0.9 ? "bn__stock__target__predictibility positive" : "bn__stock__target__predictibility negative"}>
+                                (Predictibility : <span>{targets.FPV.Confidence >= 0.9 ? 'High' : 'Low'}</span>)
+                            </p>
                         </div>
-                        <div className="col p-0 m-0" style={{ alignSelf: 'center', fontWeight: 'bold' }}>
-                            <b>AI & ML Genie</b>
+
+                        :
+
+                        <div className="bn__stock__target__value">
+                            <p className="bn__stock__target__empty">Not Enough Data To Predict</p>
+                        </div>
+                        
+                    }
+                </div>
+                <div className="bn__stock__tech__view">
+                    <div className="bn__stock__slider__wrapper">
+                        <p className="bn__stock__view__title">Short Term Technical View</p>
+                        <div className="bn__stock__slider">
+                            <CustomSlider min={-2} max={2} value={targets.OVERV.point || 0} marks={marksa}/>
                         </div>
                     </div>
-
-                    <div className="col p-0 m-0 text-center">
-                        <div>Price Targe For</div>
-                        <div style={{ fontWeight: 800, fontSize: 17 }}>10 Days</div>
-                        <div>is</div>
-                        <div style={{ fontSize: 18, fontWeight: 800 }}>Rs. 1,325 <span style={{ color: '#E51A4B' }}>(-5.66%)</span> </div>
-                    </div>
-
-
-                    <div className="pt-4">
-                        <div style={{ fontWeight: 'bold' }}>Overall Technical View</div>
-                        <div className="row">
-                            <div className="col pt-2 pl-0 pr-0 m-0">
-                                <CustomSteps active={1} />
-                            </div>
-                        </div>
-                        <div className="mt-3 p-2">
-                            <p className='w-75' style={{ marginLeft: 50, fontSize: 11.90 }} >
-                                This indicator is based on the results of the
-                                four indicators on the left hand side.
-                             </p>
-                        </div>
+                    <div className="bn__stock__text">
+                        <p>This indicator is based on the results of the four indicators on the left hand side.</p>
                     </div>
                 </div>
-
-
             </>
         )
     }
@@ -156,26 +173,41 @@ class LastSection extends React.PureComponent {
 
 
 export class Technicals extends React.PureComponent {
+
+    constructor(props)
+    {
+        super(props);
+    }
+
     render() {
-        return (
-            <>
+
+        const technicals = this.props.technicals;
+
+        if(!technicals.loading)
+        {
+            return (
+                    <>
+                        <div className="bn__stock__technicals">
+                            <div className="bn__stock__views">
+                                <TechnicalsViews targets={technicals.targets}/>
+                            </div>
+
+                            <div className="bn__stock__target">
+                                <TechnicalsTargets targets={technicals.targets}/>
+                            </div>
+                        </div>
+                    </>
+            )
+        }
+        else
+        {
+            return (
                 <div className="bn__stock__technicals">
-                    <div className="bn__stock__views">
-                        <FirstSection />
-                    </div>
-
-                    <div className="col-2">
-                        <CenterSection />
-                    </div>
-
-                    <div className="bn__stock__target">
-                        <LastSection />
-                    </div>
-                    {/* <h3 style={{textAlign : 'center'}}>Technicals Field</h3> */}
+                    <p>Loading ...</p>
                 </div>
-
-            </>
-        )
+            )
+        }
+        
     }
 }
 
