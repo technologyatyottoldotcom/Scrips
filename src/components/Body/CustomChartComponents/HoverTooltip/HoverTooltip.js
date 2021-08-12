@@ -32,14 +32,16 @@ export class HoverTooltip extends Component {
 		if (isNotDefined(pointer)) return null;
 
 		const { bgFill, bgOpacity, backgroundShapeSVG, tooltipSVG } = this.props;
-		const { bgheight, bgwidth } = this.props;
+		const { bgheight, bgwidth ,bgrx } = this.props;
 		const { height } = moreProps;
 
 		const { x, y, content, centerX, pointWidth, bgSize } = pointer;
 
+
 		const bgShape = isDefined(bgwidth) && isDefined(bgheight)
-			? { width: bgwidth, height: bgheight }
-			: bgSize;
+			? { width: bgwidth, height: bgheight , rx : bgrx }
+			: {...bgSize , rx : bgrx};
+
 
 		return (
 			<g>
@@ -65,6 +67,7 @@ HoverTooltip.propTypes = {
 	backgroundShapeSVG: PropTypes.func,
 	bgwidth: PropTypes.number,
 	bgheight: PropTypes.number,
+	bhrx : PropTypes.number,
 	bgFill: PropTypes.string.isRequired,
 	bgOpacity: PropTypes.number.isRequired,
 	tooltipContent: PropTypes.func.isRequired,
@@ -74,7 +77,8 @@ HoverTooltip.propTypes = {
 	]).isRequired,
 	fontFamily: PropTypes.string,
 	fontSize: PropTypes.number,
-    isLabled : PropTypes.bool
+    isLabled : PropTypes.bool,
+	isInline : PropTypes.bool,
 };
 
 HoverTooltip.contextTypes = {
@@ -98,27 +102,34 @@ HoverTooltip.defaultProps = {
 	backgroundShapeCanvas: backgroundShapeCanvas,
 	fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif",
 	fontSize: 12,
-    isLabled : true
+	bgrx : 3,
+    isLabled : true,
+	isInline : false,
 };
 
 const PADDING = 5;
 const X = 10;
 const Y = 10;
+const INNER = true;
 
 
 /* eslint-disable react/prop-types */
-function backgroundShapeSVG({ fill, stroke, opacity }, { height, width }) {
+function backgroundShapeSVG({ fill, stroke, opacity, ...props }, { height, width , rx }) {
+
 	return <rect
 		height={height}
 		width={width}
 		fill={fill}
+		rx={rx}
 		opacity={opacity}
-		stroke={stroke} />;
+		stroke={stroke} 	
+	/>;
 }
 
 function tooltipSVG({ fontFamily, fontSize, fontFill , isLabled }, content) {
 
 	const tspans = [];
+	let yvalues = '';
 	const startY = Y + fontSize * 0.9;
 
 	for (let i = 0; i < content.y.length; i++) {
@@ -135,10 +146,12 @@ function tooltipSVG({ fontFamily, fontSize, fontFill , isLabled }, content) {
         {
             tspans.push(<tspan key={`V-${i}`} x={X} y={textY} fill={y.stroke}>{y.value}</tspan>);
         }
+
+		yvalues = y.value && y.value !== undefined ? yvalues + ' '+ y.value : yvalues;
 	}
 	return <text fontFamily={fontFamily} fontSize={fontSize} fill={fontFill} fontWeight={600}>
-		<tspan x={X} y={startY}>{content.x}</tspan>
-		{tspans}
+		<tspan x={X} y={startY}>{content.x} {yvalues.length > 0 && ': ' + yvalues}</tspan>
+		{/* {tspans} */}
 	</text>;
 }
 /* eslint-enable react/prop-types */
@@ -202,7 +215,8 @@ function drawOnCanvas(ctx, props, context, pointer, height) {
 	ctx.restore();
 }
 
-function calculateTooltipSize({ fontFamily, fontSize, fontFill }, content, ctx) {
+function calculateTooltipSize({ fontFamily, fontSize, fontFill , isInline }, content, ctx) {
+
 	if (isNotDefined(ctx)) {
 		const canvas = document.createElement("canvas");
 		ctx = canvas.getContext("2d");
@@ -212,28 +226,66 @@ function calculateTooltipSize({ fontFamily, fontSize, fontFill }, content, ctx) 
 	ctx.fillStyle = fontFill;
 	ctx.textAlign = "left";
 
-	const measureText = str => ({
-		width: ctx.measureText(str).width,
-		height: fontSize,
-	});
+	const measureText = (str) => (
+		{
+			width: ctx.measureText(str).width,
+			height: fontSize,
+		}
+	);
 
-	const { width, height } = content.y
+	// console.log(content.y);
+
+	if(isInline)
+	{
+
+		const { width, height } = content.y
+		.map(({ label, value }) => {
+			return value && value !== undefined ? measureText(`${value}`) : {width : 0 , height : 0}
+		})
+		// Sum all y and x sizes (begin with x label size)
+		.reduce((res, size) => sumWidths(res, size), measureText(String(content.x)));
+
+		let addX = width >= 100 ? 3 : 2;
+
+		return {
+			width: width + addX * X,
+			height: height + 2 * Y
+		};
+	}
+	else
+	{
+		const { width, height } = content.y
 		.map(({ label, value }) => measureText(`${label}: ${value}`))
 		// Sum all y and x sizes (begin with x label size)
-		.reduce((res, size) => sumSizes(res, size), measureText(String(content.x)))
-	;
+		.reduce((res, size) => sumSizes(res, size), measureText(String(content.x)));
 
-	return {
-		width: width + 2 * X,
-		height: height + 2 * Y
-	};
+		return {
+			width: width + 2 * X,
+			height: height + 2 * Y
+		};
+	}
+	
 }
 
 function sumSizes(...sizes) {
+
 	return {
 		width: Math.max(...sizes.map(size => size.width)),
 		height: sum(sizes, d => d.height),
 	};
+}
+
+
+function sumWidths(...sizes)
+{
+
+
+	// console.log(sizes);
+
+	return {
+		width : sum(sizes, d => d.width),
+		height : Math.max(...sizes.map(size => size.height))
+	}
 }
 
 function normalizeX(x, bgSize, pointWidth, width) {

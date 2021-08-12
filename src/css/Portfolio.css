@@ -1,0 +1,251 @@
+* 
+{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Open Sans', sans-serif;
+ /* font-family: 'Quicksand', sans-serif;
+  */
+}
+
+:root 
+{
+  --main-blue : #00A0E3;
+  --main-green : #19E683;
+  --main-red : #E51A4B;
+  --light-grey : #EAEAEA;
+  --medium-grey : #BBBBBB;
+  --light-white : #FEFEFE;
+  --white : #FFFFFF;
+  --font-primary : #404040;
+  --font-secondary : #666666;
+  --shadow-primary : #F2F2F2;
+  --shadow-code : 1px 1px 2px rgba(0,0,0,.02) , -1px -1px 2px rgba(0,0,0,.02);
+}
+
+.portfolio__container
+{
+    width: 100%;
+    height: 100%;
+}
+
+.portfolio__container .portfolio__header
+{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px 0 10px;
+}
+
+.portfolio__container .portfolio__details
+{
+    display: flex;
+    align-items: center;
+}
+
+.portfolio__container .portfolio__details .portfolio__title
+{
+    display: flex;
+    align-items: center;
+}
+
+.portfolio__container .portfolio__details .portfolio__title img
+{
+    width: 20px;
+    height: 20px;
+}
+
+.portfolio__container .portfolio__details .portfolio__title span
+{
+    margin-left: 5px;
+    font-size: 10px;
+}
+
+.portfolio__container .portfolio__details .portfolio__name__value
+{
+    display: flex;
+    align-items: center;
+}
+
+.portfolio__container .portfolio__details .portfolio__name__value span
+{
+    font-size: 13px;
+    color: var(--font-primary);
+    font-weight: 700;
+    letter-spacing: -0.4px;
+}
+
+.portfolio__container .portfolio__details .portfolio__name__value img
+{
+    width: 14px;
+    height: 14px;
+    margin-left: 2px;
+}
+
+.portfolio__container .portfolio__value
+{
+    margin-left: 10px;
+}
+
+.portfolio__container .portfolio__value .portfolio__curr__price
+{
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.portfolio__container .portfolio__value .portfolio__change
+{
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+}
+
+.portfolio__container .portfolio__value .portfolio__change .portfolio__change__value
+{
+    font-size: 10px;
+    color: var(--main-green);
+}
+
+.portfolio__container .portfolio__value .portfolio__change .portfolio__change__per
+{
+    font-size: 13px;
+    color: var(--main-green);
+    margin-left: 2px;
+}
+
+.portfolio__container .portfolio__cash__position
+{
+    padding: 0px 0px;
+}
+
+.portfolio__container .portfolio__cash__title
+{
+    display: flex;
+    align-items: center;
+}
+
+.portfolio__container .portfolio__cash__title img
+{
+    width: 20px;
+    height: 20px;
+}
+
+.portfolio__container .portfolio__cash__title span
+{
+    font-size: 10px;
+    margin-left: 5px;
+}
+
+.portfolio__container .portfolio__cash__value
+{
+    display: flex;
+    align-items: center;
+}
+
+.portfolio__container .portfolio__cash__value span
+{
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--font-primary);
+}
+
+.portfolio__container .portfolio__cash__value .portfolio__trade__value
+{
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.portfolio__container .portfolio__search__box
+{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.portfolio__container .portfolio__search__box .stock__search
+{
+    max-width: 400px;
+    min-width: 350px;
+}
+
+.portfolio__container .portfolio__table
+{
+    padding: 0 10px;
+    max-height: 70%;
+    font-size: 12px;
+}
+
+.portfolio__container .portfolio__table table thead
+{
+    background-color: var(--white);
+    position: sticky;
+    top: 0;
+}
+
+
+.portfolio__container .portfolio__table table tbody .portfolio__stock__code
+{
+    display: flex;
+    align-items: center;
+}
+
+.portfolio__container .portfolio__table table tbody .portfolio__stock__code .stock__status
+{
+    width: 5px;
+    height: 5px;
+    background-color: var(--main-blue);
+    border-radius: 100%;
+}
+
+.portfolio__container .portfolio__table table tbody .portfolio__stock__code .stock__code
+{
+    font-size: 12px;
+    color: var(--font-primary);
+    font-weight: 700;
+    margin-left: 3px;
+}
+
+.portfolio__container .portfolio__table table tbody .portfolio__stock__name
+{
+    width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-left: 8px;
+    color: var(--font-secondary);
+    font-size: 9px;
+}
+
+.portfolio__container .total__trade__value
+{
+    display: flex;
+    justify-content: flex-end;
+    font-size: 11px;
+    color: var(--font-primary);
+    font-weight: 700;
+    margin: 5px 40px 0 0;
+}
+
+.portfolio__buttons
+{
+    position: absolute;
+    width: 100%;
+    bottom: 6%;
+    left: 0%;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.portfolio__buttons button
+{
+    margin: 0 10px 0 10px;
+    background-color: white;
+    padding: 5px 10px 5px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--font-primary);
+    border-radius: 20px;
+    box-shadow: 0 0 2px rgba(0,0,0,.15);
+}

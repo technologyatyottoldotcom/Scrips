@@ -50,10 +50,17 @@ export class CreateSection extends React.PureComponent {
 
     feedLiveData(ws)
     {
+
+        let exchangecode = this.props.config.exchange && this.props.config.exchange.code;
+        let stockcode = parseInt(this.props.config.code);
+
+        // console.log(exchangecode,stockcode);
+
         ws.send(JSON.stringify({
             "a": "subscribe", 
-            "v": [[this.props.ExchangeCode, this.props.StockCode]], 
-            "m": "marketdata"}
+            "v": [[exchangecode, stockcode]], 
+            "m": "marketdata"
+        }
         ));
 
         ws.onmessage = (response)=>{
@@ -78,7 +85,7 @@ export class CreateSection extends React.PureComponent {
                     }
     
                     let livedata = convertedData.livedata;
-                    console.log(livedata.change_percentage);
+                    // console.log(livedata.change_percentage);
                     this.setState({
                         stockData : livedata,
                         change : livedata.change_percentage
@@ -96,7 +103,7 @@ export class CreateSection extends React.PureComponent {
                     // livedata
                     livedata['change_price'] = change_price;
                     livedata['change_percentage'] = change_percentage;
-                    console.log(change_price,change_percentage);
+                    // console.log(change_price,change_percentage);
                     // console.log(livedata);
                     this.setState({
                         stockData : livedata,
@@ -141,29 +148,34 @@ export class CreateSection extends React.PureComponent {
 
     render() {
         
+        let {symbol,name} = this.props.config;
+
         let stockData = this.state.stockData;
+
+
+        // console.log(stockData);
 
 
         let change_price = parseFloat(stockData.change_price);
         let priceClass = change_price >= 0 ? 'positive' : 'negative';
 
         let fullName;
-        if(this.props.fullName.length > 20)
+        if(name.length > 20)
         {
-            fullName = this.props.fullName.slice(0,20)+'...';
+            fullName = name.slice(0,20)+'...';
         }
         else
         {
-            fullName = this.props.fullName;
+            fullName = name;
         }
 
         return (
             <>
-                <div className="app__StocksToWatch__stock" onClick={e => this.props.loadStock(this.props.ISIN)}>
+                <div className="app__StocksToWatch__stock" onClick={e => this.props.selectedStock(this.props.config)}>
                     <div className="StocksToWatch__stock__details">
                         <div>
                             <div className="StocksToWatch__stock__status"></div>
-                            <div className="StocksToWatch__stock__name">{this.props.name}</div>
+                            <div className="StocksToWatch__stock__name">{symbol}</div>
                         </div>
                         <div className="StocksToWatch__stock__fullname">{fullName}</div>
                     </div>

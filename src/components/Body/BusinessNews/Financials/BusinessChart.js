@@ -214,7 +214,7 @@ class BusinessChart extends React.PureComponent {
                     xvalues.map((xv,i)=>{
                       
                       return (
-                        <YAxis orientation={i%2 === 0 ? 'left' : 'right'} yAxisId={xv} domain={[dataMin => (dataMin - dataMin / 10), dataMax => (dataMax + dataMax / 10)]} type="number" dataKey={xv} stroke="#8884d8" hide={true}/>
+                        <YAxis orientation={i%2 === 0 ? 'left' : 'right'} yAxisId={xv} domain={[dataMin => (dataMin - dataMin / 4), dataMax => (dataMax + dataMax / 4)]} type="number" dataKey={xv} stroke="#8884d8" hide={true}/>
                       )
                     })
                   }

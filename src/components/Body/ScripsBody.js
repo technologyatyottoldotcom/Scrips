@@ -61,6 +61,7 @@ class ScripsBody extends React.PureComponent
         this.compareStock = this.compareStock.bind(this);
         this.toggleHide = this.toggleHide.bind(this);
         this.removeStock = this.removeStock.bind(this);
+        this.closeNews = this.closeNews.bind(this);
         // this.appendRandomData = this.appendRandomData.bind(this);
     }
 
@@ -274,13 +275,13 @@ class ScripsBody extends React.PureComponent
     {
         $('.business__news__section').addClass('open');
         $('.business__news__content').css('display','block');
-        $('.bn__close').addClass('active');
+        // $('.bn__close').addClass('active');
     }
 
     closeNews()
     {
         $('.business__news__section').removeClass('open');
-        $('.bn__close').removeClass('active');
+        // $('.bn__close').removeClass('active');
         setTimeout(()=>{
             $('.business__news__content').css('display','none');
         },1000)
@@ -295,9 +296,9 @@ class ScripsBody extends React.PureComponent
 
 
     /*<--- Compare Functionality Methods --->*/
-    compareStock(code,name,symbol,company,exchange)
+    compareStock(code,name,symbol,stocksymbol,company,exchange)
     {
-        console.log('COMPARE ----> ',symbol,code)
+        console.log('COMPARE ----> ',symbol,code,stocksymbol)
         let cc = this.state.CompareStockConfig;
 
         if(cc.length === 5)
@@ -315,10 +316,10 @@ class ScripsBody extends React.PureComponent
                 let hide = false;
                 this.setState({
                     CompareStockConfig : [...this.state.CompareStockConfig,{
-                    code,name,symbol,color,company,exchange,hide
+                        code,name,symbol,stocksymbol,color,company,exchange,hide
                     }],
                     NewCompareStockConfig : {
-                    code,name,symbol,color,company,exchange,hide
+                        code,name,symbol,stocksymbol,color,company,exchange,hide
                     }
                 },()=>{
                     console.log(this.state.CompareStockConfig);
@@ -401,13 +402,11 @@ class ScripsBody extends React.PureComponent
                                 </div>
                                 <div>
                                     <p onClick={this.openNews.bind(this)}>Detailed View</p>
-                                    <div className="bn__close" onClick={this.closeNews.bind(this)}>
-                                        <img src={Close} alt="x"/>    
-                                    </div>
                                 </div>
                             </div>
                             <div className="business__news__content">
                                 <BusinessNews 
+                                    closeNews={this.closeNews}
                                     stockDetails={this.state.stockDetails}
                                     stockData={this.state.stockData}
                                     snapdata={this.state.snapdata}   
@@ -448,8 +447,6 @@ class ScripsBody extends React.PureComponent
                     }
                     <div className="app__body__left">
                         <ChartContainer 
-                            // data={this.state.chartProps.chartdata}
-                            // extradata={this.state.chartProps.extradata} 
                             stockData={this.state.stockData} 
                             stockDetails={this.state.stockDetails}
                             dataLoaded={this.state.dataLoaded}
@@ -462,6 +459,7 @@ class ScripsBody extends React.PureComponent
                             NewCompareStockConfig={this.state.NewCompareStockConfig}
                             OldCompareStockConfig={this.state.OldCompareStockConfig}
                             limitFlag={this.state.limitFlag}
+                            selectedStock={this.props.selectedStock}
 
                         />
                         <StocksToWatch

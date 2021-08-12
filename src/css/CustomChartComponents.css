@@ -2,7 +2,7 @@
 /* hover tooltip */
 .react-stockcharts-tooltip-content
 {
-  filter: drop-shadow(0px 0px 5px rgba(0,0,0,0.1));
+  filter: drop-shadow(0px 0px 3px rgba(0,0,0,0.1));
 }
 
 .react-stockcharts-indicator-options
@@ -22,7 +22,6 @@
 
 
 /* recharts components */
-
 .recharts-legend-item 
 { 
   font-size: 10px; 
@@ -32,11 +31,26 @@
 {
   background-color: #fffffff3;
   padding : 5px 10px;
-  box-shadow: 0px 0px 1px #dedede;
+  box-shadow: 0px 0px 5px #dedede;
+  border-radius: 3px;
 }
 
 .custom-tooltip .custom-label
 {
   font-size: 10px!important;
   margin-bottom: 5px!important;
+}
+
+
+
+/*rsuite components*/
+.confidence__slider .rs-slider-mark
+{
+  top: -13px!important;
+}
+
+.confidence__slider .rs-slider-last-mark
+{
+  top: auto!important;
+  bottom: -8px!important;
 }

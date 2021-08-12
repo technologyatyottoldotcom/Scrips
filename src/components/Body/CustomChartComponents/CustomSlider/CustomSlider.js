@@ -52,9 +52,19 @@ const YottolSlider = withStyles({
       padding: '5px 0',
     },
     ...styles
-    
   })(Slider);
 
+const YottolSliderVertical = withStyles({
+  root: {
+    width : 2,
+    height : 200
+  },
+  rail: {
+    height: 200,
+    opacity: 0.8,
+    backgroundColor: '#cacaca',
+  },
+})(Slider);
 
   const YottolSliderShort = withStyles({
     root: {
@@ -73,9 +83,11 @@ export class CustomSlider extends React.PureComponent {
         
         if(!this.props.short)
         {
-            return (
+            if(this.props.orientation === 'vertical')
+            {
+              return (
                 <>
-                    <YottolSlider 
+                    <YottolSliderVertical 
                         min={this.props.min} 
                         max={this.props.max} 
                         defaultValue={this.props.value} 
@@ -83,8 +95,26 @@ export class CustomSlider extends React.PureComponent {
                         valueLabelDisplay="off" 
                         disabled
                     />
+                    
                 </>
-            )
+              )
+            }
+            else
+            {
+              return (
+                <>
+                    <YottolSlider 
+                        min={this.props.min} 
+                        max={this.props.max} 
+                        defaultValue={this.props.value} 
+                        marks={this.props.marks} 
+                        valueLabelDisplay="off" 
+                        orientation='horizontal'
+                        disabled
+                    />
+                </>
+              )
+            }
         }
 
         else

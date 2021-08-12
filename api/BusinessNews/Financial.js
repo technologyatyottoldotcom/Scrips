@@ -130,6 +130,7 @@ function quartelyReutersRemoveEmptyColumns({ fields=[] , values=[] }){
  return { fields : f , values : newValues }
 
 }
+
 function FilterDbData(data=[],type,from,dField){
     var l = data.length , fields = [] , values = []
     for(let i=0;i<l;++i){
@@ -257,6 +258,7 @@ return responseData
 
 function GetdbData(type,field,stockCode,from='reuters'){
 
+
     const inArray = (arr,key)=>{
         var res = -1
         if(typeof arr==='object'){
@@ -276,14 +278,19 @@ function GetdbData(type,field,stockCode,from='reuters'){
         let ct = from=='reuters' ? type ? true : false : true
         if(ct && field && stockCode && from){
             if(from==="screener" ){
-                if(field=='income'){
+                if(field=='income' && type==='quartely'){
+                    field = 'quarterly'
+                }
+                else if(field==='income' && type==='annual')
+                {
                     field = 'profitloss'
-                }else if(field=='cashflow'){
+                }
+                else if(field=='cashflow'){
                     field = 'cashflows'
                 }
             }
             let table = from==="reuters" ? ("fundamental_data_reuters_"+field+"_"+type) : from==="screener"? ('fundamental_data_screener_'+field+"_screener".toLowerCase() ): from;
-
+            
             // console.log(table);
             if(inArray(dbTablesList[from.toLowerCase()],table) != -1){
                 conn.query(`SELECT * FROM ${table} WHERE stockCode='${stockCode}'`,(e,r)=>{
@@ -359,9 +366,6 @@ function FilterChartData(values,indices)
 
 }
 
-
-
-
 function FilterFields(fields)
 {
 
@@ -378,6 +382,103 @@ function FilterFields(fields)
 
 }
 
+function FilterIndividual(fields,values,indices)
+{
+
+    let {titles,data} = FormatData(fields,values);
+
+    let result = [];
+    let totalmatched = 0;
+
+    indices.forEach((i,indx)=>{
+
+        let checkstr = i.replace(/[^a-zA-Z ]/g, "");
+        let fieldindx = titles.findIndex((t)=> t === checkstr);
+
+        if(fieldindx >= 0 && totalmatched <1 )
+        {
+
+            totalmatched +=1;
+            
+            data.forEach((d,indx)=>{
+                result.push(d[checkstr]);
+            })
+        }
+    });
+
+    return result;
+}
+
+
+function getGrowth(values,years=3)
+{
+
+    let current = values[0];
+    let compare = values[years] ? values[years] : values[values.length - 1];
+
+    let growth = ((Math.pow((current/compare),(1/years))) - 1)*100;
+
+    // console.log(current,compare);
+
+    return growth;
+}
+
+
+function getLatest(values,years)
+{   
+    let total = 0;
+
+    values.forEach((v,i)=>{
+        if(i <= (years - 1))
+        {
+            total+=v;
+        }
+    });
+
+    return total;
+}
+
+
+function FormatData(fields,values)
+{
+    let data = [];
+    let titles = [];
+
+    fields.forEach((f,findx)=>{
+        if(f!== 'stockCode' && f!=='fieldName')
+        {
+            let dobj = {};
+            let date = f;
+
+            dobj['Date'] = date;
+            dobj['Timestamp'] = new Date(date.replace('_', '')).getTime();
+            let title,value;
+            values.forEach((v,vindx)=>{
+                title = v[1].replace(/[^a-zA-Z ]/g, "");
+                value = parseFloat(v[findx].split('%')[0].replace(',',''));
+                dobj[title] = value;
+                if(!titles.includes(title))
+                {
+                    titles.push(title);
+                }
+            });
+
+            data.push(dobj);
+
+        }
+    });
+
+    //ascending order
+    data.sort((a,b)=>{
+        return a.Timestamp - b.Timestamp
+    });
+    
+    return {
+        titles,
+        data
+    };
+
+}
 // begin::ratio (reuters)
 const RatioFunctions = {
     getSpecificField(arr,field){
@@ -1514,6 +1615,73 @@ Financial.get('/createcharts/:field/:type/:stockcode',(req,res)=>{
 
 });
 
+Financial.get('/createvalues/:stockcode',(req,res)=>{
+
+    let datavalues = {};
+    let stockcode = req.params.stockcode;
+    let fromtype = GetCodeType(stockcode).type;
+
+    // console.log(fromtype)
+
+    let prom1 = GetdbData('annual','income',stockcode,fromtype).then(d=>{
+
+        let NPG = getGrowth(FilterIndividual(d.fields,d.values,['Net Income','Revenue','Sales'],'NPG').reverse(),3);
+        let EPSG = getGrowth(FilterIndividual(d.fields,d.values,['Diluted Normalized EPS','EPS in Rs'],'EPSG').reverse(),3);
+        
+        datavalues['NPG'] = NPG;
+        datavalues['EPSG'] = EPSG;
+    }
+    )
+    .catch(e => {
+        console.log(e);
+        
+    });
+
+    let prom2 = GetdbData('quartely','income',stockcode,fromtype).then(d=>{
+        // datavalues['d1'] = d;
+        let TTMEPS = FilterIndividual(d.fields,d.values,['Diluted Normalized EPS','EPS in Rs'],'TTMEPS');
+        datavalues['TTMEPS'] = getLatest(TTMEPS.reverse(),4);
+    })
+    .catch(e => {
+        console.log(e);
+        
+    });
+
+    let prom3 = GetdbData('quartely','income',stockcode,fromtype).then(d=>{
+        // datavalues['d2'] = d;
+        let ROE = FilterIndividual(d.fields,d.values,['Net Income','Net Profit'],'ROE_TTM');
+        datavalues['ROE'] = getLatest(ROE.reverse(),4);
+    })
+    .catch(e => {
+        console.log(e); 
+    });
+
+
+    let prom4 = GetdbData('quartely','balancesheet',stockcode,fromtype).then(d=>{
+        // let Total_Debt = FilterIndividual(d.values,['Total Equity']);
+        // datavalues['EQUITY'] = Total_Debt;
+
+        let DEBT = FilterIndividual(d.fields,d.values,['Total Equity']);
+        datavalues['DEBT'] = getLatest(DEBT.reverse(),1);
+    })
+    .catch(e => {
+        console.log(e); 
+    });
+
+    Promise.all([prom1,prom2,prom3,prom4]).then(()=>{
+        res.json({
+            'status' : 'success',
+            'data' : datavalues
+        })
+    })
+    .catch((e)=>{
+        res.json({
+            'status' : 'failure',
+            'message' : e.message
+        });
+    })
+
+})
 
 Financial.get('/creditrating/:stockcode',(req,res)=>{
     let stockcode = req.params.stockcode;

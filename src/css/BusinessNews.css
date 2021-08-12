@@ -28,9 +28,9 @@
   top: 0%;
   left: 0;
   width: 100%;
-  height: 96%;
+  height: 100%;
   background-color: #ffffff;
-  transform: translateY(103%);
+  transform: translateY(100%);
   z-index: 1000;
   transition: transform 1s;
   border-radius: 3px;
@@ -54,8 +54,9 @@
 {
   width: 100%;
   height: 100%;
-  box-shadow: 2px 2px 2px var(--shadow-primary) , -2px -2px 2px var(--shadow-primary);
+  box-shadow: 1px 1px 20px rgb(0 0 0 / 5%);
   display: none;
+  border-radius: 4px;
 }
 
 .business__news__section .business__news__wrapper .business__container 
@@ -91,7 +92,7 @@
   width: 240px;
   background-color: var(--white);
   right: 0%;
-  top: -0.5%;
+  top: -1%;
   transform: translateY(-100%);
   padding: 5px 10px;
   box-shadow: -2px 2px 2px var(--shadow-primary), -2px -2px 2px var(--shadow-primary);
@@ -141,8 +142,12 @@
 
 .business__news__section .business__news__wrapper .bn__close
 {
+  position: absolute;
+  top: 3%;
+  right: 3%;
+  transform: translate(50%,50%);
   margin-left: 4px;
-  display: none;
+  display:block;
   cursor: pointer;
 }
 
@@ -161,6 +166,7 @@
 {
     display: flex;
     justify-content: space-between;
+    position: relative;
 }
 
 .container__header .stock__info 

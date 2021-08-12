@@ -16,11 +16,8 @@ function getIndexData(req,res){
                 chartdata : result
             });
         }
-    })
-
-    
+    })    
 }
-
 
 IndexChartData.get('/indexdata/:symbol',getIndexData);
 

@@ -110,7 +110,7 @@ function getQuery(options)
         }
         else if(exchange === 'BSE')
         {
-            query = `SELECT TRADING_DATE AS DATE , OPEN AS OPEN , HIGH AS HIGH , LOW AS LOW , CLOSE AS CLOSE , NO_TRADES AS VOLUME FROM bse_bhav WHERE SC_CODE='${code}'`;
+            query = `SELECT TRADING_DATE AS DATE , OPEN AS OPEN , HIGH AS HIGH , LOW AS LOW , CLOSE AS CLOSE , NO_OF_SHRS AS VOLUME FROM bse_bhav WHERE SC_CODE='${code}'`;
 
         }
         else

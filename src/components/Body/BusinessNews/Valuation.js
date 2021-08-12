@@ -2,6 +2,48 @@ import React from 'react';
 import { Row, Col, Slider , RangeSlider } from 'rsuite';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,LabelList, Legend, ResponsiveContainer } from 'recharts';
 import '../../../scss/Valuation.scss';
+import Pulse from '../../Loader/Pulse';
+
+const marks = [
+    {
+      value: -2,
+      label: '-2',
+    },
+    {
+      value: -1,
+      label: '-1',
+    },
+    {
+      value: 0,
+      label: '0',
+    },
+    {
+        value: 1,
+        label: '1',
+    },
+    {
+        value: 2,
+        label: '2',
+    },
+];
+
+const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+  
+      // console.log(active,payload,label)
+      return (
+        <div className="custom-tooltip">
+          <p className="custom-label" >{`${label}`}</p>
+          {payload.map((p,indx)=>{
+            return <p style={{'color' : `${p.color}`, fontSize : '10px'}} key={indx}>{`${p.name} : ${p.value}`}</p>
+          })}
+        </div>
+      );
+    }
+  
+    return null;
+};
+
 
 function EarningValuation({ title, value, max, min, changeSliderValue}) {
 
@@ -32,20 +74,6 @@ function EarningValuation({ title, value, max, min, changeSliderValue}) {
                     </div>
                 </Col>
                 <Col md={1} sm={2} xs={7}>
-                    {/* <InputNumber
-                        min={min}
-                        max={max}
-                        value={val}
-                        onChange={value => { setValue(Nu(value)) }}
-                        onKeyDown={e => {
-                            if(e.key === 'Enter'){
-                                console.log('enter');
-                                changeSliderValue(Nu(val));
-                            }
-                        }}
-                        size="xs"
-                        placeholder="xs"
-                    /> */}
                     <input className="slider__value" readOnly value={val} />
                 </Col>
             </Row>
@@ -72,6 +100,7 @@ function PriceUpAndLowBounds(props) {
                     <p className="card__title">Valuation Confidence</p>
                     <div>
                         <CustomSlider ValuationConfidence={props.ValuationConfidence}/>
+                        {/* <CustomSlider min={-2} max={2} value={0} marks={marks} orientation="vertical"/> */}
                     </div>
                 </div>
             </>
@@ -104,11 +133,11 @@ function CustomSlider(props){
                         progress
                         tooltip={false}
                         renderMark={n =>
-                            <span key={n + Math.random() + 5} style={ n === value ? {
-                                fontWeight: "600" , fontSize : '14px' , color : '#00a0e3'
+                            <span key={n} style={ n === value ? {
+                                fontWeight: "700" , fontSize : '10px' , color : '#00a0e3'
                             } : 
                             {
-                                fontWeight: '500' , fontSize : '14px' , color : '#404040'
+                                fontWeight: '700' , fontSize : '10px' , color : '#404040'
                             }}>{printText[n]}</span>
                         }
                         onChange={v => { console.log(v) }}
@@ -127,10 +156,11 @@ function CustomizedAxisTick(props)
           <text
             x={0}
             y={0}
-            dy={16}
-            fontSize="12px"
+            dy={12}
+            fontSize="10px"
+            fontWeight="700"
             textAnchor="middle"
-            fill="#666"
+            fill="#404040"
           >
             {payload.value}
           </text>
@@ -165,14 +195,14 @@ function BoundChart(props)
                             left: 30,
                             bottom: 0
                     }}>
-                    <XAxis dataKey="name" height={60} tick={<CustomizedAxisTick />} angle={140}/>
+                    <XAxis dataKey="name" height={60} tick={<CustomizedAxisTick />} stroke="#404040"/>
                     <YAxis hide={true}/>
-                    <Tooltip />
-                    <Line type="monotone" dataKey="high" stroke="#00a0e3" strokeWidth={2}>
-                        <LabelList content={<CustomizedLabel />} />
+                    <Tooltip content={<CustomTooltip />}/>
+                    <Line type="monotone" dataKey="High" stroke="#00a0e3" strokeWidth={2}>
+                        <LabelList content={<CustomizedLabel stroke="#404040"/>} />
                     </Line>
-                    <Line type="monotone" dataKey="low" stroke="#e51a4b" strokeWidth={2}>
-                        <LabelList content={<CustomizedLabel />} />
+                    <Line type="monotone" dataKey="Low" stroke="#e51a4b" strokeWidth={2}>
+                        <LabelList content={<CustomizedLabel stroke="#404040"/>} />
                     </Line>
                     
                     </LineChart>
@@ -209,9 +239,10 @@ const data_ValuationMethodology = [
     "TTM ROE is taken into consideration for calculation of earnings multiple higher bounds and lower bounds.",
     "Based on market history, 1x ROE and 2x ROE is taken as earnings multiple higher and lower bounds.",
     "Current repo rate from the RBI is taken as proxy for the discount factor.",
-]
+];
 
 class Valuation extends React.PureComponent{
+
     constructor(props)
     {
         super(props);
@@ -241,7 +272,12 @@ class Valuation extends React.PureComponent{
 
     componentDidMount()
     {
-        this.setValuationFactor()
+
+        this.setState({
+            defaultfactors : this.props.defaultfactors,
+            currentprice : this.props.currentprice
+        });
+        this.setValuationFactor(this.props.defaultfactors)
         .then(()=>{
             this.updateStates();
         });
@@ -249,33 +285,37 @@ class Valuation extends React.PureComponent{
     }
 
     //state setters
-
-    async setValuationFactor()
+    async setValuationFactor(defaultfactors)
     {
 
+        // console.log(defaultfactors);
         // console.log('Valuation Factor Start');
         const HBoundMFactor = 2;
         const LBoundMFactor = 0.5;
 
-        let IRatio = parseFloat((1/DefaultFactors['DFP'])/(1/DefaultFactors['DFP']));
-        let HBound = DefaultFactors['ROETTM']*HBoundMFactor*IRatio;
-        let LBound = DefaultFactors['ROETTM']*LBoundMFactor*IRatio;
+        let IRatio = parseFloat((1/3.5)/(1/defaultfactors['DFP']));
+        let HBound = Math.round(defaultfactors['ROETTM']*HBoundMFactor*IRatio);
+        let LBound = Math.round(defaultfactors['ROETTM']*LBoundMFactor*IRatio);
 
         let VObj = {
-            'NPG' : DefaultFactors['EPSG'] * DefaultFactors['EPSF'],
-            'EPSG' : DefaultFactors['EPSG'],
-            'NPEPSF' : parseFloat((DefaultFactors['NPG'] / DefaultFactors['EPSG']).toFixed(1)),
-            'ROE' : DefaultFactors['ROETTM'],
+            'NPG' : Math.round(defaultfactors['EPSG'] * defaultfactors['EPSF']),
+            'TTMEPS' : Math.round(defaultfactors['TTMEPS']),
+            'EPSG' : defaultfactors['EPSG'],
+            'NPEPSF' : parseFloat((defaultfactors['NPG'] / defaultfactors['EPSG']).toFixed(1)),
+            'ROE' : defaultfactors['ROETTM'],
             'EMHB' : HBound,
             'EMLB' : LBound,
-            'IRDF' : DefaultFactors['DFP'],
+            'IRDF' : defaultfactors['DFP'],
             'IRDFR' : IRatio
 
         }
 
         this.setState({
             ValuationFactors : VObj
+        },()=>{
+            console.log(this.state.ValuationFactors);
         });
+
 
         // console.log('Valuation Factor End');
 
@@ -285,45 +325,46 @@ class Valuation extends React.PureComponent{
     {
 
         // console.log('Earning Valuation Start');
+        const defaultfactors = this.state.defaultfactors;
         const maxFactor = 3;
         const ValFactors = this.state.ValuationFactors;
-        // console.log(ValFactors);
+        console.log(ValFactors);
         let EarningVal = [
             {
                 title: 'Net Profit Growth',
                 value: ValFactors['NPG'],
-                max: DefaultFactors['NPG']*maxFactor,
+                max: defaultfactors['NPG']*maxFactor,
                 min: 0,
                 changeSliderValue : this.changeNPGValue
             },
             {
                 title: 'Earnings per Share Growth',
                 value: ValFactors['EPSG'],
-                max: DefaultFactors['EPSG']*maxFactor,
+                max: defaultfactors['EPSG']*maxFactor,
                 min: 0,
                 changeSliderValue : this.changeEPSGValue
             }, {
                 title: 'ROE',
                 value: ValFactors['ROE'],
-                max: DefaultFactors['ROETTM']*maxFactor,
+                max: defaultfactors['ROETTM']*maxFactor,
                 min: 0,
                 changeSliderValue : this.changeROEValue
             }, {
                 title: 'Earnings multiple- Higher Bound',
                 value: ValFactors['EMHB'],
-                max: DefaultFactors['EMHB']*maxFactor,
+                max: defaultfactors['EMHB']*maxFactor,
                 min: 0,
                 changeSliderValue : this.changeEMHBValue
             }, {
                 title: 'Earnings multiple- Lower Bound',
                 value: ValFactors['EMLB'],
-                max: DefaultFactors['EMLB']*maxFactor,
+                max: defaultfactors['EMLB']*maxFactor,
                 min: 0,
                 changeSliderValue : this.changeEMLBValue
             }, {
                 title: 'Interest Rate/ Discount Factor',
                 value: ValFactors['IRDF'],
-                max: DefaultFactors['DFP']*maxFactor,
+                max: defaultfactors['DFP']*maxFactor,
                 min: 0,
                 changeSliderValue : this.changeIRDFValue
             }
@@ -331,6 +372,8 @@ class Valuation extends React.PureComponent{
 
         this.setState({
             EarningValuation : EarningVal
+        },()=>{
+            console.log(this.state.EarningValuation);
         });
 
         // console.log('Earning Valuation End');
@@ -341,9 +384,11 @@ class Valuation extends React.PureComponent{
 
         // console.log('Price Band Factors Start');
 
+        const defaultfactors = this.state.defaultfactors;
+
         const ValFactors = this.state.ValuationFactors;
 
-        let SEPS = DefaultFactors['TTMEPS'];
+        let SEPS = defaultfactors['TTMEPS'];
 
         let PBObj = {
             'T' : SEPS
@@ -359,6 +404,8 @@ class Valuation extends React.PureComponent{
             PriceBandEPSFactors : PBObj
         });
 
+        // console.log(this.state.PriceBandEPSFactors);
+
         // console.log('Price Band End');
     }
 
@@ -370,14 +417,15 @@ class Valuation extends React.PureComponent{
         let PULarr = [
             {
                 name : 'T',
-                high : 600,
-                low : 600
+                High : Math.round(this.state.currentprice),
+                Low : Math.round(this.state.currentprice)
             }
         ];
         let ValFactors = this.state.ValuationFactors;
         let PriceBands = this.state.PriceBandEPSFactors;
 
         // console.log(PriceBands);
+        // console.log(ValFactors['EMHB'],ValFactors['EMLB']);
         
         for(let i=1;i<=5;i++)
         {
@@ -385,8 +433,8 @@ class Valuation extends React.PureComponent{
             let HighB = Math.round(ValFactors['EMHB']*PriceBands['T'+i]);
             let LowB = Math.round(ValFactors['EMLB']*PriceBands['T'+i]);
             bounds['name'] = 'T+'+i;
-            bounds['high'] = HighB;
-            bounds['low'] = LowB; 
+            bounds['High'] = HighB;
+            bounds['Low'] = LowB; 
             PULarr.push(bounds);
         }
 
@@ -395,6 +443,8 @@ class Valuation extends React.PureComponent{
         this.setState({
             PriceUpLowBounds : PULarr
         });
+
+        // console.log(this.state.PriceUpLowBounds)
 
         // console.log('Price Up Low Bounds End');
 
@@ -428,7 +478,7 @@ class Valuation extends React.PureComponent{
         {
             VC = 4;
         }
-        console.log(VC);
+        // console.log(VC);
         this.setState({
             ValuationConfidence : VC
         });
@@ -442,14 +492,14 @@ class Valuation extends React.PureComponent{
         // console.log('Annual Returns Start');
         
         let PriceBounds = this.state.PriceUpLowBounds;
-        let Base = parseFloat(PriceBounds[0]['high']);
+        let Base = parseFloat(PriceBounds[0]['High']);
         console.log(Base);
         let num1 = 3;
         let num2 = 5;
         if(typeof Base  === 'number')
         {
-            let ThreeY = parseFloat((((PriceBounds[num1]['high']+PriceBounds[num1]['low'])/2)/Base));
-            let FiveY = parseFloat((((PriceBounds[num2]['high']+PriceBounds[num2]['low'])/2)/Base));
+            let ThreeY = parseFloat((((PriceBounds[num1]['High']+PriceBounds[num1]['Low'])/2)/Base));
+            let FiveY = parseFloat((((PriceBounds[num2]['High']+PriceBounds[num2]['Low'])/2)/Base));
 
 
             let TYAR = parseFloat(((Math.pow((1+ThreeY),(1/3))-1)*100).toFixed(2));
@@ -480,10 +530,10 @@ class Valuation extends React.PureComponent{
     {
         let ValFactors = this.state.ValuationFactors;
 
-        let EPS = parseFloat((val/ValFactors['EPSG']).toFixed(1));
+        let EPS = Math.round((val/ValFactors['NPEPSF']).toFixed(1));
 
         ValFactors['NPG'] = val;
-        ValFactors['NPEPSF'] = EPS;
+        ValFactors['EPSG'] = EPS;
 
         this.setState({
             ValuationFactors : ValFactors
@@ -496,10 +546,10 @@ class Valuation extends React.PureComponent{
     {
         let ValFactors = this.state.ValuationFactors;
 
-        let EPS = parseFloat((ValFactors['NPG']/val).toFixed(1));
+        let NPG = Math.round((ValFactors['NPEPSF']*val).toFixed(1));
 
         ValFactors['EPSG'] = val;
-        ValFactors['NPEPSF'] = EPS;
+        ValFactors['NPG'] = NPG;
 
         this.setState({
             ValuationFactors : ValFactors
@@ -516,8 +566,8 @@ class Valuation extends React.PureComponent{
         const LBoundMFactor = 0.5;
 
         let IRatio = ValFactors['IRDFR'];
-        let HBound = parseFloat((val*HBoundMFactor*IRatio).toFixed(2));
-        let LBound = parseFloat((val*LBoundMFactor*IRatio).toFixed(2));
+        let HBound = Math.round((val*HBoundMFactor*IRatio).toFixed(2));
+        let LBound = Math.round((val*LBoundMFactor*IRatio).toFixed(2));
 
         console.log(IRatio,HBound,LBound);
 
@@ -541,6 +591,8 @@ class Valuation extends React.PureComponent{
         let ValFactors = this.state.ValuationFactors;
         ValFactors['EMHB'] = val;
 
+        // console.log(val);
+
         this.setState({
             ValuationFactors : ValFactors
         },()=>{
@@ -562,6 +614,9 @@ class Valuation extends React.PureComponent{
 
     changeIRDFValue(val)
     {
+
+        const defaultfactors = this.state.defaultfactors;
+
         let ValFactors = this.state.ValuationFactors;
 
         let ROE = ValFactors['ROE'];
@@ -569,10 +624,10 @@ class Valuation extends React.PureComponent{
         const HBoundMFactor = 2;
         const LBoundMFactor = 0.5;
 
-        let IRatio = parseFloat(1/val)/(1/DefaultFactors['DFP']);
+        let IRatio = parseFloat(1/val)/(1/defaultfactors['DFP']);
 
-        let HBound = parseFloat(ROE*HBoundMFactor*IRatio).toFixed(2);
-        let LBound = parseFloat(ROE*LBoundMFactor*IRatio).toFixed(2);
+        let HBound = Math.round(ROE*HBoundMFactor*IRatio).toFixed(2);
+        let LBound = Math.round(ROE*LBoundMFactor*IRatio).toFixed(2);
 
         ValFactors['IRDF'] = val;
         ValFactors['IRDFR'] = IRatio;
@@ -606,84 +661,97 @@ class Valuation extends React.PureComponent{
     render()
     {
 
-        const data = this.state.EarningValuation;
-        
-        if(DefaultFactors['TTMNP'] < 0 || DefaultFactors['TTMEPS'] < 0)
+        if(this.state.defaultfactors)
         {
-            return(
-                <>
-                    <div className="valuation__empty">
-                        <div className="empty__text">
-                            <p className="mb-4">Fundamental valuation using standard methodologies is not possible as financials 
-                                    of the company do not allow for such a valuation.
-                            </p>
-                            <p>Kindly use your own judgement in arriving at a value. </p>
+            const data = this.state.EarningValuation;
+
+            const defaultfactors = this.state.defaultfactors;
+
+            console.log(defaultfactors);
+            
+            if(defaultfactors['TTMEPS'] < 0 || defaultfactors['ROETTM'] < 0 || defaultfactors['EPSG'] < 0 || defaultfactors['NPG'] < 0)
+            {
+                return(
+                    <>
+                        <div className="valuation__empty">
+                            <div className="empty__text">
+                                <p className="mb-4">Fundamental valuation using standard methodologies is not possible as financials 
+                                        of the company do not allow for such a valuation.
+                                </p>
+                                <p>Kindly use your own judgement in arriving at a value. </p>
+                            </div>
                         </div>
-                    </div>
-                    
-                </>
-            )
+                        
+                    </>
+                )
+            }
+            else
+            {
+                return(
+                    <>
+
+                        <div className="stock__valuation">
+                            <div className="stock__valuation__left">
+                                <div className="stock__earning__valuation">
+                                    <p className="card__title">Earnings Valuation</p>
+                                        {
+                                            data.map((e, i) => {
+                                                if (typeof e == 'object' && !Array.isArray(e)) {
+                                                    return <EarningValuation key={i + Math.random()} {...e} />
+                                                } else return null
+                                            })
+                                        }
+                                    <div className="card__condition">
+                                        <span style={{fontSize : '11px'}}>*</span> The above values have been set according to our estimates.
+                                        You may set them as necessary according to your views.
+                                    </div>
+                                </div>
+
+                                <div className="stock__annual__returns">
+                                    <p className="card__title">Annual Returns</p>
+                                    <div className="annual__returns">
+                                        <p>3 year potential Upside/ Downside</p>
+                                        <span>{this.state.ThreeYearReturn}%</span>
+                                    </div>
+                                    <div className="annual__returns">
+                                        <p>5 year potential Upside/ Downside</p>
+                                        <span>{this.state.FiveYearReturn}%</span>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                            <div className="stock__valuation__right">
+                                <div className="stock__price__bounds">
+                                {this.state.PriceUpLowBounds && 
+                                    <PriceUpAndLowBounds 
+                                    labels={this.state.PriceUpLowLabels} 
+                                    data={this.state.PriceUpLowBounds} 
+                                    ValuationConfidence={this.state.ValuationConfidence}
+                                /> }  
+                                </div>
+                                <div className="stock__methodology">
+                                    <p className="card__title">Valuation Methodology</p>
+                                    <div>
+                                        {(this.state.ValuationMethodology || []).map((e, i) => <div key={i + 9 + Math.random()}>{i + 1}.&nbsp;{e}</div>)}
+                                    </div>
+                                </div>  
+                            </div>
+                        </div>
+                        
+                        {/* <Row>
+                            <div className="container m-auto mt-5 mb-5 p-3" style={{ border: '1px solid black', borderRadius: 10 , marginLeft : 0 , width : '90%'}}>
+                                
+                            </div>
+                        </Row> */}
+                    </>
+                )
+            }
         }
         else
         {
-            return(
-                <>
-
-                    <div className="stock__valuation">
-                        <div className="stock__valuation__left">
-                            <div className="stock__earning__valuation">
-                                <p className="card__title">Earnings Valuation</p>
-                                    {
-                                        data.map((e, i) => {
-                                            if (typeof e == 'object' && !Array.isArray(e)) {
-                                                return <EarningValuation key={i + Math.random()} {...e} />
-                                            } else return null
-                                        })
-                                    }
-                                <div className="card__condition">
-                                    <span style={{fontSize : '11px'}}>*</span> The above values have been set according to our estimates.
-                                    You may set them as necessary according to your views.
-                                </div>
-                            </div>
-
-                            <div className="stock__annual__returns">
-                                <p className="card__title">Annual Returns</p>
-                                <div className="annual__returns">
-                                    <p>3 year potential Upside/ Downside</p>
-                                    <span>{this.state.ThreeYearReturn}%</span>
-                                </div>
-                                <div className="annual__returns">
-                                    <p>5 year potential Upside/ Downside</p>
-                                    <span>{this.state.FiveYearReturn}%</span>
-                                </div>
-                            </div>
-                            
-                        </div>
-                        <div className="stock__valuation__right">
-                            <div className="stock__price__bounds">
-                               {this.state.PriceUpLowBounds && 
-                                <PriceUpAndLowBounds 
-                                   labels={this.state.PriceUpLowLabels} 
-                                   data={this.state.PriceUpLowBounds} 
-                                   ValuationConfidence={this.state.ValuationConfidence}
-                               /> }  
-                            </div>
-                            <div className="stock__methodology">
-                                <p className="card__title">Valuation Methodology</p>
-                                <div>
-                                    {(this.state.ValuationMethodology || []).map((e, i) => <div key={i + 9 + Math.random()}>{i + 1}.&nbsp;{e}</div>)}
-                                </div>
-                            </div>  
-                        </div>
-                    </div>
-                    
-                    {/* <Row>
-                        <div className="container m-auto mt-5 mb-5 p-3" style={{ border: '1px solid black', borderRadius: 10 , marginLeft : 0 , width : '90%'}}>
-                            
-                        </div>
-                    </Row> */}
-                </>
-            )
+            return <div className="stock__valuation loader">
+                <Pulse />
+            </div>
         }
         
     }

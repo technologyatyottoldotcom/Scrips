@@ -11,6 +11,7 @@ const { IndexChartData } = require('./IndexChartData/');
 const { StockChartData } = require('./StockChartData/');
 const { StocksToWatch } = require('./StocksToWatch/');
 const { Financial } = require('./BusinessNews/Financial');
+const { Portfolios } = require('./Portfolios');
 const { Common } = require('./Common/');
 
 
@@ -23,6 +24,7 @@ app.use(IndexChartData);
 app.use(StockChartData);
 app.use(StocksToWatch);
 app.use(Financial);
+app.use(Portfolios);
 app.use(Common);
 
 

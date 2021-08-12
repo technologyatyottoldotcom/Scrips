@@ -4,7 +4,7 @@ import Axios from 'axios';
 import UpperStockChart from './UpperStockChart';
 import AnimatedDigit from '../AnimatedDigit';
 import {readMarketData,setChange} from '../../../exports/FormatData';
-import {getEndOfDayMinutes} from '../../../exports/FutureEntries';
+import {getEndOfDayMinutes,generateMarketDay} from '../../../exports/FutureEntries';
 import Spinner from '../../Loader/Spinner';
 import Pulse from '../../Loader/Pulse';
 
@@ -60,32 +60,38 @@ export class UpperStock extends React.PureComponent {
         Axios.get(`${REQUEST_BASE_URL}/indexdata/${this.props.Symbol}`)
         .then((data)=>{
             let stockArray = data.data.chartdata;
-            let tempDataArray = [];
-            // console.log(stockArray);
-            stockArray.forEach(d =>{
-                let dobj = {
-                    date : new Date(d['TIMESTAMP']),
-                    open : parseFloat(d['OPEN']),
-                    high : parseFloat(d["HIGH"]),
-                    low : parseFloat(d["LOW"]),
-                    close : parseFloat(d['CLOSE']),
-                    volume : parseInt(d['VOLUME'])
-                }
 
-                    tempDataArray.push(dobj);
+            // console.log(stockArray);
+
+            let date = stockArray.length > 0 && stockArray[0];
+
+            let points = generateMarketDay(new Date(date['TIMESTAMP']));
+
+            // console.log(points);
+
+
+            let tempDataArray = points;
+            tempDataArray.forEach((d,indx) =>{
+                if(stockArray[indx])
+                {
+                    let dobj = {
+                        open : stockArray[indx]['OPEN'] && parseFloat(stockArray[indx]['OPEN']),
+                        high : stockArray[indx]["HIGH"] && parseFloat(stockArray[indx]["HIGH"]),
+                        low : stockArray[indx]["LOW"] && parseFloat(stockArray[indx]["LOW"]),
+                        close : stockArray[indx]['CLOSE'] && parseFloat(stockArray[indx]['CLOSE']),
+                        volume : stockArray[indx]['VOLUME'] && parseInt(stockArray[indx]['VOLUME'])
+                    }
+    
+                    tempDataArray[indx] = {...tempDataArray[indx],...dobj};
+                }
             });
 
-            // console.log(tempDataArray[tempDataArray.length-1])
-            let lastPoint = tempDataArray[tempDataArray.length-1];
-
-            let futuredata = getEndOfDayMinutes(lastPoint);
-
-            // console.log(futuredata);
+            // console.log(tempDataArray);
 
             this.setState({
                 isLoading : false,
                 apidata : tempDataArray,
-                extradata : futuredata
+                extradata : []
             },()=>{
                 this.updateIndexData();
             });
@@ -102,29 +108,28 @@ export class UpperStock extends React.PureComponent {
             Axios.get(`${REQUEST_BASE_URL}/indexdata/${this.props.Symbol}`)
             .then((data)=>{
                 let stockArray = data.data.chartdata;
-                let tempDataArray = [];
-                // console.log(stockArray);
-                stockArray.forEach(d =>{
+
+                let date = stockArray.length > 0 && stockArray[0];
+
+                let points = generateMarketDay(new Date(date['TIMESTAMP']));
+
+                let tempDataArray = points;
+                stockArray.forEach((d,indx) =>{
                     let dobj = {
-                        date : new Date(d['TIMESTAMP']),
                         open : parseFloat(d['OPEN']),
                         high : parseFloat(d["HIGH"]),
                         low : parseFloat(d["LOW"]),
                         close : parseFloat(d['CLOSE']),
                         volume : parseInt(d['VOLUME'])
                     }
-                    tempDataArray.push(dobj);
+
+                    tempDataArray[indx] = {...tempDataArray[indx],...dobj};
                 });
 
-                // console.log(tempDataArray.length);
-
-                let lastPoint = tempDataArray[tempDataArray.length-1];
-
-                let futuredata = getEndOfDayMinutes(lastPoint);
                 
                 this.setState({
                     apidata : tempDataArray,
-                    extradata : futuredata
+                    extradata : []
                 });
             })
             .catch((error)=>{

@@ -20,7 +20,7 @@ export class ComparePopup extends React.PureComponent {
             stockISIN : this.props.stockDetails.stockISIN,
             stockIndustry : this.props.stockDetails.stockIndustry,
             isLoading : true,
-            stocks : null,
+            stocks : [],
         }
         this.handleSearchChange = this.handleSearchChange.bind(this);
         this.handleSelection = this.handleSelection.bind(this);
@@ -86,7 +86,7 @@ export class ComparePopup extends React.PureComponent {
     {
         axios.get(`${REQUEST_BASE_URL}/stock/${this.state.search}`)
         .then((response) => {
-            // console.log(response.data);
+            console.log(response.data.suggestions);
             this.setState({
                 suggestions : response.data.suggestions,
                 suggestionsLoaded : true
@@ -110,7 +110,7 @@ export class ComparePopup extends React.PureComponent {
 
         const CompareStockConfig = this.props.CompareStockConfig;
 
-        console.log(CompareStockConfig);
+        // console.log(CompareStockConfig);
 
         return (
             <>
@@ -140,7 +140,7 @@ export class ComparePopup extends React.PureComponent {
                                             <StockCompare 
                                                 key={indx}
                                                 compareStock={this.props.compareStock} 
-                                                {...s}
+                                                config={s}
                                                 handleSelection={this.handleSelection}
                                                 added={false}
                                             />
@@ -161,7 +161,12 @@ export class ComparePopup extends React.PureComponent {
                                     {
                                         CompareStockConfig.map((c,i)=>{
                                         return (
-                                                <StockCompare key={i} {...c} added={true} removeStock={this.props.removeStock}/>
+                                                <StockCompare 
+                                                    key={i} 
+                                                    config={c}
+                                                    added={true} 
+                                                    removeStock={this.props.removeStock}
+                                                />
                                             )
                                         })
                                     }
@@ -178,22 +183,14 @@ export class ComparePopup extends React.PureComponent {
 
                                         <>
                                         <p className="Compare__stock__section">Similar Symbols</p>
-                                        {this.state.stocks.map((s,indx)=>{
+                                        {this.state.stocks && this.state.stocks.map((s,indx)=>{
 
-                                            const exchange=
-                                            {
-                                                exchange : s.exchange,
-                                                exchange_code : s.exchange_code
-                                            }
+                                           
                                             return <>
                                                 <StockCompare 
                                                     key={indx} 
                                                     added={false}
-                                                    code={s.code}
-                                                    name={s.Name}
-                                                    symbol={s.Symbol}
-                                                    company={s.company}
-                                                    exchange={exchange}
+                                                    config={s}
                                                     compareStock={this.props.compareStock}
                                                     handleSelection={this.handleSelection}
                                                 />

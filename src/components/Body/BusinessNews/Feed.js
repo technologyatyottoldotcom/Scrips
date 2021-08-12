@@ -1,5 +1,6 @@
 import React from 'react';
 import '../../../scss/Feed.scss';
+import Pulse from '../../Loader/Pulse';
 import { Popover, Whisper , Dropdown , Loader } from 'rsuite';
 import 'rsuite/dist/styles/rsuite-default.css';
 
@@ -118,6 +119,7 @@ function shortenLargeNumber(num, digits) {
 
     return num;
 }
+
 const createTime = (dte=new Date())=>{
   var res = {
     time : null,
@@ -140,14 +142,14 @@ const createTime = (dte=new Date())=>{
 return res
 }
 
-function LoadingDiv({ total = 5 , background= '#e8dddd4a' , loadingColor = '#ece6e6' , margin = '10px' , width = 400 , height = 50 }){
+function LoadingDiv({ total = 5 , margin = '10px' , width = 400 , height = 80 }){
   const arr = [] , num = Number(total)
   for(let k=0;k<num;++k)arr.push(k);
   return(
     arr.map((v,i)=>{
       return(
-        <div key={i+Math.random() + 65} style={{ overflow : 'hidden' , margin : margin , width : width , height : height , position : 'relative' , background:background}}>
-          <div className="LoadingDivAnimation" style={{position:'relative', animationDuration : ( (Math.round(Math.random() * ( 10 - 4 ) + 4 ) ) || 4) +'s' ,boxShadow : '0 0 20px' , transform : 'rotateZ(44deg)' , top : -10, width : 1 , height : height + 15 , background : loadingColor }}></div>
+        <div key={i+Math.random() + 65} style={{ overflow : 'hidden' , margin : margin , width : width , height : height , position : 'relative' ,  boxShadow: '1px 1px 20px rgb(0 0 0 / 3%)' , borderRadius : '3px' , display : 'flex' , justifyContent : 'center', alignItems : 'center'}}>
+          <Pulse />
         </div>
       )
     })
@@ -462,7 +464,7 @@ render(){
                 (this.state.data ).map((v,i)=>{
                     let text = this.hashTagsUsers(v) , thumbnail = this.DescThumbnail(v,text) , Link = `https://twitter.com/i/web/status/${v.id_str}`
                     return (
-                     <div className="row m-0 p-1 pt-2 mb-3 border" key={ v.id_str + Math.random() * (i || 2) }>
+                     <div className="row m-0  mb-3" style={{boxShadow: '1px 1px 20px rgb(0 0 0 / 3%)' , borderRadius : '3px' , padding : '10px 5px'}} key={ v.id_str + Math.random() * (i || 2) }>
                        
                         <div className="col-1 p-0 m-0" style={{paddingRight:10,marginLeft:1,textAlign:'right'}}>{v.user.profile_image_url_https && <img src={v.user.profile_image_url_https} className="img-fluid rounded-circle" alt={v.user.name} style={{cursor:'pointer'}} onClick={_=>window.open(Link,"_blank")} />} </div>
                         <div className="col-10 m-0 ml-2 " style={{cursor:'pointer'}} >
@@ -565,7 +567,7 @@ function RenderMedia({ data }){
         {
           get.img ? (
             <>
-              <img src={get.img} style={{ width: '100%' }} alt={link.slice(-12)} />
+              <img src={get.img} style={{ width: '100%' , borderRadius : '3px' }} alt={link.slice(-12)} />
             </>
           ) : (
             <>
@@ -577,6 +579,7 @@ function RenderMedia({ data }){
     </>
   )
 }
+
 class GoogleFeeds extends React.PureComponent{
   constructor(props){
     super(props);
@@ -605,7 +608,7 @@ class GoogleFeeds extends React.PureComponent{
             (this.state.data || []).map((v, i) => {
               if(v && 'object'===typeof v){
                 return(
-                   <div key={i+Math.random() + 6} className="row" style={{ border : '1px solid #dee2e6',borderRadius:8 , padding : 10 , margin : 3 , marginBottom : 15 }}>
+                   <div key={i+Math.random() + 6} className="row" style={{boxShadow: '1px 1px 20px rgb(0 0 0 / 3%)' , borderRadius : '5px' , padding : '10px 5px' , margin : '0px 8px 15px 8px'}}>
                       <RenderMedia data={v} />
                    </div> 
                 )

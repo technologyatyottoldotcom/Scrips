@@ -302,7 +302,7 @@ function getMinuteInterval(startDate,endDate,incr)
         );
 
     }
-    // console.log(interval.length,interval[0],interval[interval.length-1]);
+    console.log(interval.length,interval[0],interval[interval.length-1]);
     return interval;
 }
 
@@ -776,6 +776,26 @@ export function getEndOfDayMinutes(lastPoint)
         // console.log(points);
         return points;
     }
+}
+
+export function generateMarketDay(date)
+{
+    let startDT = moment(date).clone().set({
+        'hour' : defaultStartTime.startHour,
+        'minute' : defaultStartTime.startMinute,
+        'second' : defaultStartTime.startSecond
+    });
+
+    let endDT = moment(date).clone().set({
+        'hour' : defaultEndTime.endHour,
+        'minute' : defaultEndTime.endMinute,
+        'second' : defaultEndTime.endSecond
+    });
+
+    // console.log(startDT,endDT);
+    let points = getMinuteInterval(startDT,endDT,1);
+    // console.log(points);
+    return points;
 }
 
 export function filterBigData(data,range)

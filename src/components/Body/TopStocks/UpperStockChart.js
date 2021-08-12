@@ -174,7 +174,7 @@ export class UpperStockChart extends React.PureComponent {
                             stroke={this.props.status === 'positive' ? "#19E683" : "#e51a4b"} 
                             interpolation={curveCardinal}
                         />
-                        {/* <LastPointIndicator yAccessor={d => d.open} displayFormat={format(".4s")} radius={3} fill={this.props.status === 'positive' ? "#00b894" : "#e51a4b"}/> */}
+                        {/* <LastPointIndicator yAccessor={d => d.open} displayFormat={format(".4s")} radius={2} fill={this.props.status === 'positive' ? "#00b894" : "#e51a4b"}/> */}
                         <StraightLine strokeDasharray="ShortDash" strokeWidth={1} stroke={this.props.status === 'positive' ? "#19E683" : "#e51a4b"} opacity={1} yValue={openPrice}/>
 
                             {/* <HoverTooltip

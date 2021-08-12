@@ -3,11 +3,15 @@ import Axios from 'axios';
 import ScripsMenu from './ScripsMenu';
 import BrandLogo from '../../assets/icons/yottol.png';
 import Search from '../../assets/icons/search.svg';
+import Pulse from '../Loader/Pulse';
+import { Alert } from '../Body/CustomChartComponents/CustomAlert/CustomAlert';
 
 const REQUEST_BASE_URL = process.env.REACT_APP_REQUEST_BASE_URL;;
 
 
 class StockSuggestion extends React.PureComponent{
+
+
     constructor(props)
     {
         super(props)
@@ -15,27 +19,48 @@ class StockSuggestion extends React.PureComponent{
 
     render()
     {
-        if(this.props.suggestions.length > 0)
-        {
-            // console.log(this.props.suggestions)
 
-            return (
-                <>
-                    {this.props.suggestions.map((s,index)=>{
-                        return <p 
-                            key={s.code} 
-                            onClick={e => {this.props.selectedStock(s);this.props.handleSelection()}}>
-                                <span>{s.symbol}</span> 
-                                <span>{s.company}</span> 
-                                <span>{s.exchange.exchange}</span>
-                        </p>
-                    })}
-                </>
-            )
+        // console.log('RENDER' , this.props.search.length,this.props.suggestions.length)
+        // console.log(this.props.suggestions.length);
+
+        const {search,suggestions,loading} = this.props;
+
+        // console.log(search,suggestions.length,loading)
+
+
+        if(!loading)
+        {
+            // console.log('CALL SUGGESTION')
+
+            if(search.length > 0 && suggestions.length > 0)
+            {
+                return (
+                    <>
+                        {suggestions.map((s,index)=>{
+                            let stocksymbol = s.exchange.exchange === 'NSE' ? s.nse_code : s.bse_code;
+                            return <p 
+                                key={s.code} 
+                                onClick={e => {this.props.selectedStock(s);this.props.handleSelection()}}>
+                                    <span>{stocksymbol}</span> 
+                                    <span>{s.company}</span> 
+                                    <span>{s.exchange.exchange}</span>
+                            </p>
+                        })}
+                    </>
+                )
+            }
+            else
+            {
+                return null;
+            }
+            
         }
         else
         {
-            return null
+            return <div className="search__loader">
+                <Pulse />
+                <p>Loading Stocks Please Wait ...</p>
+            </div>
         }
     }
 }
@@ -49,10 +74,39 @@ class ScripsHeader extends React.Component
         super(props);
         this.state = {
             search : '',
+            loading : false,
             suggestions : []
         }
         this.handleSearchChange = this.handleSearchChange.bind(this);
         this.handleSelection = this.handleSelection.bind(this);
+        this.setComponentRef = this.setComponentRef.bind(this);
+        this.handleClickOutside = this.handleClickOutside.bind(this);
+    }
+
+
+    componentDidMount() {
+        document.addEventListener('mousedown', this.handleClickOutside);
+    }
+    
+    componentWillUnmount() {
+        document.removeEventListener('mousedown', this.handleClickOutside);
+    }
+
+
+    setComponentRef(node)
+    {
+        this.ComponentRef = node;
+    }
+
+
+    handleClickOutside(event) {
+        if (this.ComponentRef && !this.ComponentRef.contains(event.target)) {
+            this.setState({
+                search : '',
+                suggestions : [],
+                loading : false,
+            })
+        }
     }
 
     handleSearchChange(e)
@@ -63,7 +117,21 @@ class ScripsHeader extends React.Component
         },()=>{
             if(this.state.search && this.state.search.length > 0)
             {
-                this.getSuggestions();
+                this.setState({
+                    suggestions : [],
+                    loading : true,
+                },()=>{
+                    this.getSuggestions();
+                });
+                
+            }
+            else
+            {
+                // console.log('-----EMPTY-----')
+                this.setState({
+                    suggestions : [],
+                    loading : false,
+                })
             }
         });
     }
@@ -73,8 +141,10 @@ class ScripsHeader extends React.Component
         Axios.get(`${REQUEST_BASE_URL}/stock/${this.state.search}`)
         .then((response) => {
             // console.log(response.data);
+            let suggestions = response.data.suggestions;
             this.setState({
-                suggestions : response.data.suggestions
+                loading : false,
+                suggestions : suggestions
             })
         })
         .catch((error)=>{
@@ -90,10 +160,9 @@ class ScripsHeader extends React.Component
         })
     }
 
-    
-
     render()
     {
+
         return <div className="app__header">
             <div className="brand__logo">
                 <img src={BrandLogo} alt="Yottol"/>
@@ -101,39 +170,15 @@ class ScripsHeader extends React.Component
             <div className="brand__name">
                 <p>Air</p>
             </div>
-            <div className="stock__search">
+            <div className="stock__search" ref={this.setComponentRef}>
                 <div className="stock__search__icon">
                     <img src={Search} alt=""/>
                 </div>
                 <input placeholder='Search' value={this.state.search} onChange={e => this.handleSearchChange(e)}/>
 
                 <div className="stock__suggestions">
-                    <StockSuggestion suggestions={this.state.suggestions} selectedStock={this.props.selectedStock} handleSelection={this.handleSelection}/>
+                    <StockSuggestion search={this.state.search} loading={this.state.loading} suggestions={this.state.suggestions} selectedStock={this.props.selectedStock} handleSelection={this.handleSelection}/>
                 </div>
-                {/* <Autocomplete
-                    id="free-solo-demo"
-                    // freeSolo
-                    options={this.state.suggestions}
-                    style={{width : '100%'}}
-                    onChange={this.props.selectedStock}
-                    getOptionLabel={option => option.company}
-                    renderOption={(option) => {
-                        <>
-                            <span>{option.code}</span>
-                        </>
-                    }}
-                    renderInput={(params) => (
-                        <>
-                                <TextField
-                                    {...params} 
-                                    fullWidth 
-                                    label="Search" 
-                                    onChange={e => this.handleSearchChange(e)}    
-                                />
-                        </>
-                       
-                    )}
-                /> */}
                 
             </div>
             <ScripsMenu setActiveElement={this.props.setActiveElement}/>

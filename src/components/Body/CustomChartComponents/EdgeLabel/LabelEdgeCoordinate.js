@@ -71,6 +71,7 @@ LabelEdgeCoordinate.defaultProps = {
 	yAxisPad: 0,
 	rectWidth: 50,
 	rectHeight: 20,
+	rectRadius : 0,
 	orient: "left",
 	at: "left",
 	price: 0,

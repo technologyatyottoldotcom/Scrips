@@ -4,6 +4,7 @@ import AnimatedDigit from '../AnimatedDigit';
 import SettingIcon from '../../../assets/icons/settings.svg';
 import PlusIcon from '../../../assets/icons/plus.svg';
 import MinusIcon from '../../../assets/icons/minus.svg';
+import Close from '../../../assets/icons/close.svg';
 import { QuoteNav } from './QuoteNav';
 import { Overview } from './Overview';
 import { Financials } from './Financials/Financials';
@@ -33,7 +34,9 @@ class BusinessNews extends React.PureComponent {
         const stock = this.props.stockDetails;
         let exchange = stock.stockExchange.exchange;
         let code = exchange === 'NSE' ? stock.stockNSECode : stock.stockBSECode;
+        let riccode = stock.stockSymbol;
         this.getTargets(exchange,code);
+        this.getDefaultValues(riccode);
     }
 
     componentDidUpdate(prevProps)
@@ -48,7 +51,9 @@ class BusinessNews extends React.PureComponent {
             const stock = this.props.stockDetails;
             let exchange = stock.stockExchange.exchange;
             let code = exchange === 'NSE' ? stock.stockNSECode : stock.stockBSECode;
+            let riccode = stock.stockSymbol;
             this.getTargets(exchange,code);
+            this.getDefaultValues(riccode);
         }
     }
 
@@ -77,6 +82,46 @@ class BusinessNews extends React.PureComponent {
                     }
                 });
             }
+        })
+        .catch((err)=>{
+            console.log(err);
+        });
+    }
+
+    getDefaultValues(code)
+    {
+        Axios.get(`${REQUEST_BASE_URL}/createvalues/${code}`)
+        .then((res)=>{
+
+            let data = res.data;
+
+            // console.log(data);
+
+            if(data.status === 'success')
+            {
+                const defaultfactors = data.data;
+
+                let TTMEPS = Math.round(defaultfactors.TTMEPS);
+                let NPG = Math.round(defaultfactors.NPG);
+                let EPSG = Math.round(defaultfactors.EPSG);
+                let EPSF = parseFloat((NPG/EPSG).toFixed(2));
+                let ROETTM = Math.round((defaultfactors.ROE/defaultfactors.DEBT)*100);
+                let DFP = parseFloat((4.5).toFixed(2));
+                let IRDF = parseFloat((3).toFixed(2));
+                let EMHB = Math.round((ROETTM*2*((1/IRDF)/(1/DFP))));
+                let EMLB = Math.round((ROETTM*0.5*((1/IRDF)/(1/DFP))));
+
+                this.setState({
+                    defaultfactors : {
+                        TTMEPS,NPG,EPSG,EPSF,ROETTM,DFP,IRDF,EMHB,EMLB
+                    }
+                })
+            }
+            else
+            {
+                console.log('Faliure');
+            }
+            
         })
         .catch((err)=>{
             console.log(err);
@@ -183,6 +228,9 @@ class BusinessNews extends React.PureComponent {
                                         <div data-field="feed">Feed</div>
                                     </QuoteNav>
                                 </div>
+                                <div className="bn__close" onClick={this.props.closeNews}>
+                                    <img src={Close} alt="x"/>    
+                                </div>
                             </div>
     
                             {this.props.snapdata ? 
@@ -193,7 +241,10 @@ class BusinessNews extends React.PureComponent {
                                         snapdata={this.props.snapdata}
                                     />}
                                     {field === 'financials' && <Financials stockDetails={this.props.stockDetails}/>}
-                                    {field === 'valuation' && <Valuation />}
+                                    {field === 'valuation' && <Valuation 
+                                        defaultfactors={this.state.defaultfactors}
+                                        currentprice={TradePrice}
+                                    />}
                                     {field === 'technicals' && <Technicals 
                                         technicals = {this.state.technicals}
                                     />}

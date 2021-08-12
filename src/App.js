@@ -79,11 +79,12 @@ class App extends React.Component
 
         <div className="app__back__blur"></div>
 
-        <CompareLimitPopup />
-        <IndicatorLimitPopup />
+        {/* <CompareLimitPopup /> */}
+        {/* <IndicatorLimitPopup /> */}
 
         <ScripsHeader 
-          setActiveElement={this.setActiveElement} selectedStock={this.selectedStock}/>
+          setActiveElement={this.setActiveElement} 
+          selectedStock={this.selectedStock}/>
         <ScripsBody 
           stockDetails = {this.state.stockDetails}
           setActiveElement={this.setActiveElement} 
@@ -91,7 +92,7 @@ class App extends React.Component
           active={this.state.active}
           selectedStock={this.selectedStock}
         />
-        <ScripsFooter />
+        <ScripsFooter/>
       </div>
     );
   }

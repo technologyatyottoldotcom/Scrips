@@ -693,7 +693,7 @@ export class StockChart extends React.PureComponent {
 
             let { data, xScale, xAccessor, displayXAccessor } = this.state;
 
-            // console.log(data,xScale,xAccessor,displayXAccessor);
+            // console.log(data);
 
             // console.log(width);
 
@@ -783,7 +783,7 @@ export class StockChart extends React.PureComponent {
 
                     <Chart 
                         id={1} 
-                        padding={0}
+                        padding={60}
                         yExtents={yExtents}
                         origin={[0,0]} 
                         height={getChartHeight(height,zoom,TotalCharts)}

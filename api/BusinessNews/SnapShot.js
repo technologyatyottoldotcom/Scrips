@@ -105,7 +105,8 @@ class SnapShots {
             }
         }
         return newData
-    } 
+    }
+
     GetSpecificFieldObject(data = [], fieldName = '') {
         let res = null
         for (let k of data || []) {
@@ -118,6 +119,7 @@ class SnapShots {
         }
         return res
     }
+
     GETAverageData(data1, data2) {
         const Arrange = (data) => {
             let Asc = this.GetLatestFour(data).asc, AscArr = Object.keys(Asc), lng = AscArr.length;
@@ -152,9 +154,11 @@ class SnapShots {
 
 
     }
+
     ConvertNumber(n) {
         return Number(String(n).replace(/[^.\d]/g, '').replace(/^(\d*\.?)|(\d*)\.?/g, "$1$2"))
     }
+
     Filter(data, regex) {
         var res = {}
         if (Array.isArray(data)) data = data[0]
@@ -167,6 +171,7 @@ class SnapShots {
         }
         return res
     }
+
     LatestYearValue(data = {}) {
         let LatestYearValue = {
             yearToTimeStamp: null,
@@ -185,6 +190,7 @@ class SnapShots {
         }
         return LatestYearValue
     }
+
     GetLatestFour(data) {
         var tempYears = {}, arr = []
         for (let k in data) {
@@ -211,7 +217,6 @@ class SnapShots {
             "sumOfAsc": sum
         }
     }
-
 
     MarketCap(data = this.data) {
         try {
@@ -425,13 +430,20 @@ class SnapShots {
 
     ROE_TTM() {
         try {
+
+            
             let filterR = this.Filter(this.data[13], this.regex),
                 RnetIncome = this.GetLatestFour(filterR || {}), Rsum = RnetIncome.sumOfAsc;
             this.ROE_TTM_reuter_quartely_netIncome = filterR;
 
+            // console.log(RnetIncome,Rsum,this.DebtToEquity_Equity.value);
+
             let filter = this.Filter(this.data[14], /(.*)_\d+/),
                 screener_netProfit = this.GetLatestFour(filter || {}), 
                 sSum = screener_netProfit.sumOfAsc;
+
+            // console.log(screener_netProfit,sSum,this.DebtToEquity_Equity.value);
+
 
               let res = {
                     "reuters": {
@@ -827,7 +839,7 @@ const MYSQL = (data,func) => {
     SELECT * FROM fundamental_data_screener_shareholding_pattern_screener WHERE stockCode='${reutersCode}' AND fieldName LIKE TRIM('Promoters +%') LIMIT 1;
  
     SELECT * FROM fundamental_data_reuters_income_quartely WHERE stockCode='${reutersCode}' AND fieldName = TRIM('Net Income') LIMIT 1;
-    SELECT * FROM fundamental_data_screener_profitloss_screener WHERE stockCode='${nseCode}' AND fieldName = TRIM('Net Profit') LIMIT 1;
+    SELECT * FROM fundamental_data_screener_quarterly_screener WHERE stockCode='${nseCode}' AND fieldName = TRIM('Net Profit') LIMIT 1;
 
     SELECT * FROM fundamental_data_reuters_income_annual WHERE stockCode='${reutersCode}' AND fieldName = TRIM('Net Income') LIMIT 1;
     SELECT * FROM fundamental_data_reuters_balancesheet_annual WHERE stockCode='${reutersCode}' AND fieldName = TRIM('Total Equity') LIMIT 1;

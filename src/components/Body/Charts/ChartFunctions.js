@@ -113,8 +113,8 @@ function ChartWrapper(range,chartType,closePrice)
                 strokeWidth={1}
                 lineOpacity={0}
                 opacity={1}
-                rectRadius={2}
-                fontWeight="600"
+                rectRadius={10}
+                fontWeight="700"
                 dx={1}
             />
             <PriceMarkerCoordinate 
@@ -124,19 +124,22 @@ function ChartWrapper(range,chartType,closePrice)
                 displayFormat={format('.2f')}
                 strokeDasharray="ShortDot"
                 dx={20} 
-                fill="#4E4E4E"
+                fill="#000000"
                 rectWidth={55}
                 rectHeight={20} 
-                fontSize={10}  
+                fontSize={10} 
+                opacity={0.5} 
             />
             <HoverTooltip
                 tooltipContent={tooltipContent(range)}
-                fontSize={10}
+                fontSize={11}
                 bgOpacity={0}
                 fill='#ffffff'
                 opacity={1}
+                bgrx={15}
                 stroke='none'
                 isLabled={false}
+                isInline={true}
             />
         </>
     )
@@ -172,6 +175,7 @@ function ChartWrapperZoom(range,lastPoint,stockDetails,chartType,closePrice,tota
                 fill="#00a0e3"
                 rectHeight={18}
                 rectWidth={stockDetails.stockNSECode.length * 11}
+                rectRadius={10}
                 dx={1}
                 fontSize={11}
                 strokeDasharray="ShortDot"
@@ -210,19 +214,22 @@ function ChartWrapperZoom(range,lastPoint,stockDetails,chartType,closePrice,tota
                 displayFormat={format('.2f')}
                 strokeDasharray="ShortDot"
                 dx={20} 
-                fill="#4E4E4E"
+                fill="#000000"
                 rectWidth={55}
                 rectHeight={20} 
                 fontSize={10}  
+                opacity={0.5}
             />
             <HoverTooltip
                 tooltipContent={tooltipContent(range)}
                 fontSize={12}
-                bgOpacity={0}
                 fill='#ffffff'
+                bgOpacity={0}
                 opacity={1}
+                bgrx={15}
                 stroke='none'
                 isLabled={false}
+                isInline={true}
             />
             <CrossHairCursor />
         </>
@@ -231,6 +238,8 @@ function ChartWrapperZoom(range,lastPoint,stockDetails,chartType,closePrice,tota
 
 function ChartCompareStock(zoom,indx,config,getCompareAccessor,toggleHide,removeStock)
 {
+
+    console.log(config);
     if(!config.hide)
     {
         return (
@@ -277,6 +286,7 @@ function ChartCompareStockTooltip(zoom,indx,config,toggleHide,removeStock)
                         fontSize={11}
                         rectHeight={18}
                         rectWidth={config.symbol.length * 11}
+                        rectRadius={10}
                         strokeWidth={1}
                         lineOpacity={0}
                         labelText={config.symbol}
@@ -368,10 +378,11 @@ function ChartWrapperCompare(zoom,range,stockDetails,CompareStockConfig,toggleHi
                         fontSize={11}
                         rectHeight={18}
                         rectWidth={stockDetails.stockNSECode.length * 11}
+                        rectRadius={10}
                         strokeWidth={1}
                         lineOpacity={0}
                         labelText={stockDetails.stockNSECode}
-                        />
+                    />
                 </>
             }
             <LastPointIndicator yAccessor={d => d.compare.open} displayFormat={format(".2%")} fill="#00a0e3" radius={5}/>

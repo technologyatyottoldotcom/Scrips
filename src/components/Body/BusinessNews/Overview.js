@@ -156,7 +156,7 @@ class About extends React.PureComponent {
 class ExecutiveLeadership extends React.PureComponent {
     render() {
         return (
-            <div className="GlobalScrollBar" style={{ maxHeight: 110 }}>
+            <div className="GlobalScrollBar" style={{ maxHeight: 180 }}>
                 <p>Executive Leadership</p>
                 {!this.props.data.length ? <NoAnyDataFound />
                     :
@@ -176,7 +176,7 @@ class Address extends React.PureComponent {
     render() {
         return (
             <>
-                <div className="GlobalScrollBar" style={{ maxHeight: 110 }}>
+                <div className="GlobalScrollBar" style={{ maxHeight: 180 }}>
                     <p>Address</p>
                     <div style={{ fontSize: "12px" }}>
                         {!this.props.data ? <NoAnyDataFound /> :

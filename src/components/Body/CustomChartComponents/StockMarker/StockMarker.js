@@ -83,6 +83,7 @@ StockMarker.defaultProps = {
 	yAxisPad: 0,
 	rectHeight: 20,
 	rectWidth: 50,
+	rectRadius : 0,
 	arrowWidth: 10,
 	fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif",
 	fontSize: 13,

@@ -1,24 +1,66 @@
 import React from 'react';
+import Axios from 'axios';
 import Coin from '../../../assets/icons/coins.svg';
 import BriefCase from '../../../assets/icons/suitcase.svg';
 import ChevronDown from '../../../assets/icons/ChevronDown.svg';
+import "../../../css/Portfolio.css";
+import TableRow from './PortfolioComponents/TableRow';
+import { ReCalculateWeight } from '../../../exports/ReCalculateWeight';
+import PerformanceAnalytics from './PortfolioComponents/PerformanceAnalytics';
+import Pulse from '../../Loader/Pulse';
+import SearchBar from './PortfolioComponents/SearchBar';
+import { Alert } from '../CustomChartComponents/CustomAlert/CustomAlert';
+
+const REQUEST_BASE_URL = process.env.REACT_APP_REQUEST_BASE_URL;
+
 
 class Portfolios extends React.PureComponent {
 
-    CashPos() {
+    constructor(props) {
+        super(props);
+        this.state = {
+            data : [],
+            orderArr : [],
+            newWeight : [],
+            cashPos : null,
+            tradeVolume : 0,
+            sum : null,
+            isLoaded : false,
+            activeElement : 0,
+            dataLen : 0,
+        }
+        this.addOrderArr = this.addOrderArr.bind(this);
+        this.portfolioHome = this.portfolioHome.bind(this);
+        this.performanceAnalyse = this.performanceAnalyse.bind(this);
+        this.addTableRow = this.addTableRow.bind(this);
+    }
+
+    componentDidMount(){
+        Axios.get(`${REQUEST_BASE_URL}/portfolio`).then(response => {
+            let arr = new Array(response.data.portfolioData.length).fill(0);
+            this.setState({
+                data : response.data.portfolioData,
+                dataLen : response.data.portfolioData.length,
+                orderArr : arr,
+                newWeight : arr,
+                cashPos : 13254,
+                sum : response.data.sum,
+                isLoaded : true,
+            })
+        })
+    }
+
+    CashPos({ cashPos, tradeVolume }) {
+        const curr = (num) => parseFloat(num).toLocaleString('en-IN', {style: 'currency',currency: 'INR'});
         return (
             <>
-                <div style={{ display: 'flex' }}>
-                    <div>
-                        <img src={Coin} height={20} width={20} alt="Coin" />
-                    </div>
-                    <div style={{ color: '#8e8888', marginLeft: 8, fontSize: 10, alignSelf: 'flex-end' }}>
-                        Cash Position
+                <div className="portfolio__cash__title">
+                    <img src={Coin} alt="Coin" />
+                    <span>Cash Position</span>
                 </div>
-                </div>
-                <div style={{ textAlign: 'left', fontWeight: 300 }}>
-                    <span style={{ fontSize: 13 }}>Rs.&nbsp;</span>
-                    <span style={{ fontSize: 20 }}>13,254.00</span>
+                <div className="portfolio__cash__value">
+                    <span>{curr(cashPos)}</span>
+                    {(tradeVolume!=0)?<span className="portfolio__trade__value"> ({curr(cashPos-tradeVolume)})</span>:''}
                 </div>
             </>
         )
@@ -27,33 +69,27 @@ class Portfolios extends React.PureComponent {
     PortfolioNme() {
         return (
             <>
-                <div style={{ display: 'flex' }}>
-                    <div>
-                        <img src={BriefCase} height={20} width={20} alt="Briefacase" />
-                    </div>
-                    <div style={{ color: '#8e8888', marginLeft: 8, fontSize: 12, alignSelf: 'flex-end' }}>
-                        Portfolio Name
+                <div className="portfolio__title">
+                    <img src={BriefCase} alt="Briefacase" />
+                    <span>Portfolio Name</span>
                 </div>
-                </div>
-                <div style={{ textAlign: 'left', fontWeight: "bold" }}>
-                    Growth Portfolio <img src={ChevronDown} alt="ChevronDown" />
+                <div className="portfolio__name__value">
+                    <span>Growth Portfolio</span> 
+                    <img src={ChevronDown} alt="ChevronDown" />
                 </div>
             </>
         )
     }
 
     CreatePriceCol({ heading, change, changePer, color = "#19E683" }) {
+        const curr = (num) => parseFloat(num).toLocaleString('en-IN', {style: 'currency',currency: 'INR'})
         return (
             <>
-                <div style={{ fontSize: 10, fontWeight: 'bold', textAlign: 'left' }}>
-                    <div style={{ fontSize: 14 }}>
-                        {heading}
+                    <p className="portfolio__curr__price">{curr(heading)}</p>
+                    <div className="portfolio__change">
+                        <span className="portfolio__change__value">{curr(change)}</span> 
+                        {changePer && <span className="portfolio__change__per">{changePer}</span>}
                     </div>
-                    <div style={{ color: color }}>
-                        {change} 
-                        {changePer && <span style={{ fontSize: 11, fontWeight: 800 }}>{changePer}</span>}
-                    </div>
-                </div>
             </>
         )
     }
@@ -65,9 +101,9 @@ class Portfolios extends React.PureComponent {
                     v[1].style['borderBottom'] = '1px solid #ccc'
                 }
 
-                return <th key={Math.random() + i} {...v[1]}>{v[0]}</th>
+                return <th key={i} {...v[1]} >{v[0]}</th>
             }
-            else return <th key={Math.random() + i} style={{ padding: 5, borderBottom: v ? '1px solid #ccc' : '' }}>{v}</th>
+            else return <th key={i} style={{ padding: 5, borderBottom: v ? '1px solid #e7e7e7' : ''}}>{v}</th>
 
         })
     }
@@ -84,250 +120,219 @@ class Portfolios extends React.PureComponent {
         )
     }
 
-    Name({ name, fullName }) {
-        return (
-            <>
-                <div style={{ fontSize: 12, display: 'flex' }}>
-                    <div style={{ marginTop: 8, width: 5, height: 5, borderRadius: '100%', background: '#00a0e3' }}></div>
-                    <div style={{ marginLeft: 4, fontSize: 14, fontWeight: 700 }}>{name}</div>
-                </div>
-                <div style={{
-                    width: 100,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    textAlign: 'left', marginLeft: 8, color: '#9ea0a2', fontSize: 11
-                }}>{fullName}</div>
-            </>)
+    Button({performanceAnalyse}){
+        return(
+                <>
+                    <div>
+                        <button>Download Report</button>
+                        <button onClick={performanceAnalyse}>Perfomance Analysis</button>
+                    </div>
+                    <div>
+                        <button>Place Portfolio Order</button>
+                    </div>
+                </>
+        )
     }
 
-    Symbol({ type }) {
-        return <div className="increase-circle" style={{ backgroundColor: (type === '+' ? '#00a0e3' : '#E51A4B') }}>{type}</div>
+    portfolioHome(){
+        this.setState({
+            activeElement : 0
+        })
     }
+
+    performanceAnalyse(){
+        this.setState({
+            activeElement : 2
+        })
+    }
+
+    addOrderArr(index, type ){
+
+        const {orderArr, data, cashPos} = this.state;
+        this.setState({insufficientCash: false});
+
+        (type === '+') ? orderArr[index] += 1 : orderArr[index] -= 1;
+
+        if(-orderArr[index] > data[index].Quantity){
+            orderArr[index] += 1
+            Alert({
+                TitleText : 'Warning',
+                Message : 'Cannot sell more than current holding.',
+                Band : true,
+                BandColor : '#E51A4B',
+                BoxColor : '#ffffff',
+                TextColor : '#000000',
+                AutoClose : {
+                    Active : true,
+                    Line : true,
+                    LineColor : '#E51A4B',
+                    Time : 5
+                }
+            })
+
+        } else{
+
+            const {newWeight, tradeVolume} = ReCalculateWeight(data, orderArr);
+    
+            if(cashPos-tradeVolume < 0){
+                orderArr[index] -= 1
+                Alert({
+                    TitleText : 'Warning',
+                    Message : 'Net cash postion cannot be negative. Add SELL order to BUY more.',
+                    Band : true,
+                    BandColor : '#00a0e3',
+                    BoxColor : '#ffffff',
+                    TextColor : '#000000',
+                    AutoClose : {
+                        Active : true,
+                        Line : true,
+                        LineColor : '#00a0e3',
+                        Time : 5
+                    }
+                })
+
+            }
+            else{
+                this.setState({
+                    newWeight, tradeVolume, orderArr
+                })
+            }   
+        }
+
+    }
+
+    createTable = () => {
+
+        const {data} = this.state;
+
+        let table = [];
+        data.forEach((row, i) => {
+            table.push(<TableRow key={i} index={i} newWeight={this.state.newWeight[i]} data={row} orderArr={this.state.orderArr} addOrderArr={this.addOrderArr}/>)
+        })
+
+        return table;
+    }
+
+    async addTableRow(stock){
+        
+        let {data, orderArr, newWeight, dataLen} = this.state;
+        
+        let code = (stock.exchange.exchange.toLowerCase()=='nse')? stock.nse_code : stock.bse_code;
+
+        if(!(data.map(el => el.StockCode).includes(code))){
+            const obj = {
+                StockCode: code,
+                StockName: stock.name,
+                Quantity: 0,
+                AverageCost: 0,
+                CostValue: 0,
+                CurrentPrice: (await Axios.get(`${REQUEST_BASE_URL}/stock_price/${stock.exchange.exchange.toLowerCase()}/${code}`)).data.CLOSE,
+                CurrentValue: 0,
+                PortfolioWeight: 0,
+                TotalReturn: 0
+            }
+    
+            data.push(obj);
+            dataLen = data.length;
+            orderArr[dataLen-1] = 0;
+            newWeight[dataLen-1] = 0;
+    
+            this.setState({
+                data, newWeight, orderArr, dataLen
+            })
+        }
+    }
+
+
 
     render() {
-        return (
-            <>
-                <div className="container" style={{ fontSize: 13, color: 'black' }}>
-                    {/* <div style={{ textAlign: 'right', lineHeight: .1, alignSelf: 'flex-end', cursor: 'pointer' }}>
-                        <img src={XCrossmark} alt="X-Crossmark" />
-                    </div> */}
-                    <div className="row">
-                        <div className="col-4">
-                            <div className="row">
-                                <div className="col">
-                                    <this.PortfolioNme />
+        const {sum, isLoaded, cashPos, tradeVolume, activeElement, insufficientCash} = this.state;
+ 
+
+        const curr = (num) => parseFloat(num).toLocaleString('en-IN', {style: 'currency',currency: 'INR'});
+        if(!isLoaded){
+            return(<div style={{minHeight: 500, display: 'flex', justifyContent: 'center', alignItems: 'center'}}><Pulse /></div>)
+        }else{
+            if(activeElement == 0)
+                return (
+                    <>
+                        <div className="portfolio__container">
+                            
+                            <div className="portfolio__header">
+                                <div className="portfolio__details">
+                                    <div className="portfolio__name">
+                                        <this.PortfolioNme />
+                                    </div>
+                                    <div className="portfolio__value">
+                                        <this.CreatePriceCol
+                                            heading={sum.currentValueSum}
+                                            change="+106000000.78"
+                                            changePer="(+.95%)"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="col" style={{ alignSelf: 'flex-end' }}>
-                                    <this.CreatePriceCol
-                                        heading="Rs. 21,123,131.00"
-                                        change="+106,000,000.78"
-                                        changePer="(+.95%)"
+                                <div className="portfolio__cash__position">
+                                    <this.CashPos 
+                                        cashPos={cashPos}
+                                        tradeVolume={tradeVolume}
+                                    
                                     />
                                 </div>
+                                <div className="portfolio__search__box" >
+                                    <SearchBar addTableRow={this.addTableRow}/>
+                                </div>
                             </div>
+                            <div className="GlobalScrollBar portfolio__table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <this.THead th={[
+                                                "Name",
+                                                "Quantity",
+                                                <span><small>Avg.</small>  Buy Price</span>,
+                                                "Curr Price", "Inv Cost", "Curr Value", "Return",
+                                                "Today", "Port. Wt.", "Trade Vol.", "Order", "", ""
+                                            ]} />
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+
+                                        {this.createTable()}
+        
+                                        {/* total */}
+                                        <this.Tbody td={[
+                                            <div style={{ fontWeight: 'bold' }}>Total</div>,
+                                            "", "", "",
+                                            <div style={{ fontWeight: 'bold' }}>{curr(sum.costValueSum)}</div>,
+                                            <div style={{ fontWeight: 'bold' }}>{curr(sum.currentValueSum)}</div>,
+                                            <span style={{ fontWeight: 'bold', color: "#19E683" }}>{sum.totalReturnSum}%</span>,
+                                            <span style={{ fontWeight: 'bold', color: "#19E683" }}>1.2%</span>,
+                                            <div style={{ fontWeight: 'bold' }}>100%</div>,
+                                            ""
+                                        ]} style={{ borderTop: '1px solid #ccc' }} />
+        
+                                    </tbody>
+                                </table>
+                            </div>
+                            {(tradeVolume!=0)?
+                                <span className="total__trade__value">
+                                    Total trade Value: {curr(tradeVolume)}
+                                </span> 
+                                : 
+                                ''
+                            }
                         </div>
-                        <div className="col" style={{ alignSelf: 'flex-end' }}>
-                            <this.CashPos />
+
+                        
+
+                        <div className="portfolio__buttons">
+                            <this.Button performanceAnalyse={this.performanceAnalyse} />
                         </div>
-                    </div>
-                    <div className="GlobalScrollBar" style={{ maxHeight: 400 }}>
-                        <table>
-                            <thead >
-                                {/* borderBottom: '1px solid #ccc' */}
-                                <tr>
-                                    <this.THead th={[
-                                        "Name",
-                                        "Quantity",
-                                        <span><small>Avg.</small>  Buy Price</span>,
-                                        "Curr Price", "Inv Cost", "Curr Value", "Return",
-                                        "Today", "Port. Wt.", "Order", "", ""
-                                    ]} />
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <this.Tbody td={[
-                                    <this.Name name="RELIANCE.NS" fullName="Reliance Industry ltd." />
-                                    ,
-                                    "10,003",
-                                    "2103.06",
-                                    "2250.60",
-                                    "210,336,2530",
-                                    "210,336,2530",
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>10.3%</span>,
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>1.2%</span>,
-                                    "10.3%",
-                                    "0",
-                                    <this.Symbol type="+" />,
-                                    <this.Symbol type="-" />
-
-                                ]} />
-                                <this.Tbody td={[
-                                    <this.Name name="RELIANCE.NS" fullName="Reliance Industry ltd." />
-                                    ,
-                                    "10,003",
-                                    "2103.06",
-                                    "2250.60",
-                                    "210,336,2530",
-                                    "210,336,2530",
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>10.3%</span>,
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>1.2%</span>,
-                                    "10.3%",
-                                    "0",
-                                    <this.Symbol type="+" />,
-                                    <this.Symbol type="-" />
-
-                                ]} />
-                                <this.Tbody td={[
-                                    <this.Name name="RELIANCE.NS" fullName="Reliance Industry ltd." />
-                                    ,
-                                    "10,003",
-                                    "2103.06",
-                                    "2250.60",
-                                    "210,336,2530",
-                                    "210,336,2530",
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>10.3%</span>,
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>1.2%</span>,
-                                    "10.3%",
-                                    "0",
-                                    <this.Symbol type="+" />,
-                                    <this.Symbol type="-" />
-
-                                ]} />
-                                <this.Tbody td={[
-                                    <this.Name name="RELIANCE.NS" fullName="Reliance Industry ltd." />
-                                    ,
-                                    "10,003",
-                                    "2103.06",
-                                    "2250.60",
-                                    "210,336,2530",
-                                    "210,336,2530",
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>10.3%</span>,
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>1.2%</span>,
-                                    "10.3%",
-                                    "0",
-                                    <this.Symbol type="+" />,
-                                    <this.Symbol type="-" />
-
-                                ]} />
-                                <this.Tbody td={[
-                                    <this.Name name="RELIANCE.NS" fullName="Reliance Industry ltd." />
-                                    ,
-                                    "10,003",
-                                    "2103.06",
-                                    "2250.60",
-                                    "210,336,2530",
-                                    "210,336,2530",
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>10.3%</span>,
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>1.2%</span>,
-                                    "10.3%",
-                                    "0",
-                                    <this.Symbol type="+" />,
-                                    <this.Symbol type="-" />
-
-                                ]} />
-                                <this.Tbody td={[
-                                    <this.Name name="RELIANCE.NS" fullName="Reliance Industry ltd." />
-                                    ,
-                                    "10,003",
-                                    "2103.06",
-                                    "2250.60",
-                                    "210,336,2530",
-                                    "210,336,2530",
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>10.3%</span>,
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>1.2%</span>,
-                                    "10.3%",
-                                    "0",
-                                    <this.Symbol type="+" />,
-                                    <this.Symbol type="-" />
-
-                                ]} />
-                                <this.Tbody td={[
-                                    <this.Name name="RELIANCE.NS" fullName="Reliance Industry ltd." />
-                                    ,
-                                    "10,003",
-                                    "2103.06",
-                                    "2250.60",
-                                    "210,336,2530",
-                                    "210,336,2530",
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>10.3%</span>,
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>1.2%</span>,
-                                    "10.3%",
-                                    "0",
-                                    <this.Symbol type="+" />,
-                                    <this.Symbol type="-" />
-
-                                ]} />
-                                <this.Tbody td={[
-                                    <this.Name name="RELIANCE.NS" fullName="Reliance Industry ltd." />
-                                    ,
-                                    "10,003",
-                                    "2103.06",
-                                    "2250.60",
-                                    "210,336,2530",
-                                    "210,336,2530",
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>10.3%</span>,
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>1.2%</span>,
-                                    "10.3%",
-                                    "0",
-                                    <this.Symbol type="+" />,
-                                    <this.Symbol type="-" />
-
-                                ]} />
-                                <this.Tbody td={[
-                                    <this.Name name="RELIANCE.NS" fullName="Reliance Industry ltd." />
-                                    ,
-                                    "10,003",
-                                    "2103.06",
-                                    "2250.60",
-                                    "210,336,2530",
-                                    "210,336,2530",
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>10.3%</span>,
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>1.2%</span>,
-                                    "10.3%",
-                                    "0",
-                                    <this.Symbol type="+" />,
-                                    <this.Symbol type="-" />
-
-                                ]} />
-                                <this.Tbody td={[
-                                    <this.Name name="RELIANCE.NS" fullName="Reliance Industry ltd." />
-                                    ,
-                                    "10,003",
-                                    "2103.06",
-                                    "2250.60",
-                                    "210,336,2530",
-                                    "210,336,2530",
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>10.3%</span>,
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>1.2%</span>,
-                                    "10.3%",
-                                    "0",
-                                    <this.Symbol type="+" />,
-                                    <this.Symbol type="-" />
-
-                                ]} />
-
-
-                                {/* total */}
-                                <this.Tbody td={[
-                                    <div style={{ fontWeight: 'bold' }}>Total</div>,
-                                    "",
-                                    "",
-                                    "",
-                                    <div style={{ fontWeight: 'bold' }}>210,33650</div>,
-                                    <div style={{ fontWeight: 'bold' }}>210,33650</div>,
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>10.3%</span>,
-                                    <span style={{ fontWeight: 'bold', color: "#19E683" }}>1.2%</span>,
-                                    <div style={{ fontWeight: 'bold' }}>100%</div>,
-                                    ""
-                                ]} style={{ borderTop: '1px solid #ccc' }} />
-
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </>
-        )
+                    </>
+                )
+            else if(activeElement == 2)
+                return(<PerformanceAnalytics portfolioHome={this.portfolioHome} currentValue={sum.currentValueSum}/>)
+        }
     }
 }
 

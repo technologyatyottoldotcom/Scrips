@@ -28,7 +28,7 @@ class StocksToWatch extends React.PureComponent {
             stockISIN : this.props.stockISIN,
             stockIndustry : this.props.stockIndustry,
             isLoading : true,
-            stocks : null,
+            stocks : [],
         }
         this.getStocksToWatch = this.getStocksToWatch.bind(this);
         this.getStockFromISIN = this.getStockFromISIN.bind(this);
@@ -81,34 +81,6 @@ class StocksToWatch extends React.PureComponent {
         })
     }
 
-    
-    // CreateSection({ ISIN , name, fullName, changePer, color = "#19E683", isFavorite = false ,loadStock }) {
-
-    //     if(fullName.length > 20)
-    //     {
-    //         fullName = fullName.slice(0,20)+'...';
-    //     }
-    //     return (
-    //         <>
-    //             <div className="app__StocksToWatch__stock" onClick={e => loadStock(ISIN)}>
-    //                 <div className="StocksToWatch__stock__details">
-    //                     <div>
-    //                         <div className="StocksToWatch__stock__status"></div>
-    //                         <div className="StocksToWatch__stock__name">{name}</div>
-    //                     </div>
-    //                     <div className="StocksToWatch__stock__fullname">{fullName}</div>
-    //                 </div>
-    //                 <div className="StocksToWatch__stock__favourite">
-    //                     <span>{changePer}</span>
-    //                     <span className="StocksToWatch__stock__star">
-    //                         {<SVGIMG1.Star isFav={isFavorite} />}
-    //                     </span>
-    //                 </div>
-    //             </div>
-    //         </>
-    //     )
-    // }
-
     render() {
 
         if(!this.state.isLoading)
@@ -136,9 +108,10 @@ class StocksToWatch extends React.PureComponent {
     
     
                         <div className="app__StocksToWatch__container">
-                            {this.state.stocks.map((s,i)=>{
+                            {this.state.stocks && this.state.stocks.map((s,i)=>{
                                 return <CreateSection 
                                         key={i} 
+                                        config={s}
                                         ISIN={s.ISIN} 
                                         name={s.Symbol} 
                                         fullName={s.Name} 
@@ -146,6 +119,7 @@ class StocksToWatch extends React.PureComponent {
                                         loadStock={this.getStockFromISIN}
                                         ExchangeCode={parseInt(s.exchange_code)}
                                         StockCode={parseInt(s.code)}
+                                        selectedStock={this.props.selectedStock}
                                 />
                             })}
     

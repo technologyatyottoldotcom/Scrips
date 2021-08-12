@@ -7,19 +7,21 @@ import StockChart from './StockChart';
 import Interactive from './Interactive';
 import ComparePopup from './AppPopups/ComparePopup/ComparePopup';
 import IndicatorPopup from './AppPopups/IndicatorPopup/IndicatorPopup';
+import StockSearchPopup from './AppPopups/StockSearchPopup/StockSearchPopup';
+import { Alert } from './CustomChartComponents/CustomAlert/CustomAlert';
 import Zoom from '../../assets/icons/zoom.svg';
 import Compare from '../../assets/icons/compare.svg';
 import IndicatorIcon from '../../assets/icons/indicator.svg';
 import CrossIcon from '../../assets/icons/crossicon.svg';
-import Line from '../../assets/icons/line.svg';
-import Area from '../../assets/icons/area.svg';
-import Candles from '../../assets/icons/candles.svg';
-import Column from '../../assets/icons/bar.svg';
-import JumpLine from '../../assets/icons/jumpline.svg';
-import Range from '../../assets/icons/range.svg';
-import OHLC from '../../assets/icons/OHLC.svg';
-import Marker from '../../assets/icons/marker.svg';
-import Stick from '../../assets/icons/stick.svg';
+import Line from '../../assets/icons/chart-line.svg';
+import Area from '../../assets/icons/area-chart.svg';
+import Candles from '../../assets/icons/candle-chart.svg';
+import Column from '../../assets/icons/column-chart.svg';
+import JumpLine from '../../assets/icons/chart-jump.svg';
+import Range from '../../assets/icons/chart-range.svg';
+import OHLC from '../../assets/icons/ohlc-chart.svg';
+import Marker from '../../assets/icons/chart-marker.svg';
+import Stick from '../../assets/icons/stick-chart.svg';
 import Renko from '../../assets/icons/renko.svg';
 import Kagi from '../../assets/icons/kagi.svg';
 import Point from '../../assets/icons/point.svg';
@@ -51,6 +53,7 @@ export class ChartContainer extends React.PureComponent {
         this.setInitialSize = this.setInitialSize.bind(this);
         this.CloseComparePopup = this.CloseComparePopup.bind(this);
         this.CloseIndicatorPopup = this.CloseIndicatorPopup.bind(this);
+        this.CloseStockPopup = this.CloseStockPopup.bind(this);
         this.ChangeIndicatorType = this.ChangeIndicatorType.bind(this);
         this.addCompareData = this.addCompareData.bind(this);
         this.removeCompareData = this.removeCompareData.bind(this);
@@ -65,6 +68,7 @@ export class ChartContainer extends React.PureComponent {
             compareOpen : false,
             interactiveOpen : false,
             indicatorInfoOpen : false,
+            stockOpen : false,
             comparedataLoaded : true,
             bigcomparedataLoaded : true,
             RemoveFlag : false,
@@ -612,7 +616,7 @@ export class ChartContainer extends React.PureComponent {
         
                 });
     
-                console.log(chartdata);
+                // console.log(chartdata);
                 // console.log(this.state.lastPoint);
                 let lastPoint = chartdata[chartdata.length - 1];
                 console.log(lastPoint);
@@ -1033,60 +1037,36 @@ export class ChartContainer extends React.PureComponent {
     {
         if(!this.state.indicatorOpen)
         {
-            $('.Indicator__popup').addClass('active');
-            $('.Compare__popup').removeClass('active');
-            $('.Interactive__popup').removeClass('active');
-            $('.app__back__blur').addClass('active');
-            this.setState({
-                indicatorOpen : true,
-                compareOpen : false,
-                interactiveOpen : false
-            });
+            this.wrapPopups('Indicator__popup',true);
+            this.wrapStates('indicatorOpen',true);
         }
     }
 
     CloseIndicatorPopup()
     {
-        console.log('CLOSE')
+        
         if(this.state.indicatorOpen)
         {
-            $('.Indicator__popup').removeClass('active');
-            $('.app__back__blur').removeClass('active');
-            this.setState({
-                indicatorOpen : false
-            });
+            this.wrapPopups('Indicator__popup',false);
+            this.wrapStates('indicatorOpen',false);
         } 
     }
-
-    
 
     OpenComparePopup()
     {
         if(!this.state.compareOpen)
         {
-            $('.Compare__popup').addClass('active');
-            $('.Interactive__popup').removeClass('active');
-            $('.Indicator__popup').removeClass('active');
-            $('.app__back__blur').addClass('active');
-
-            this.setState({
-                compareOpen : true,
-                indicatorOpen : false,
-                interactiveOpen : false
-            });
+            this.wrapPopups('Compare__popup',true);
+            this.wrapStates('compareOpen',true);
         }
     }
 
     CloseComparePopup()
     {
-        console.log('close');
         if(this.state.compareOpen)
         {
-            $('.Compare__popup').removeClass('active');
-            $('.app__back__blur').removeClass('active');
-            this.setState({
-                compareOpen : false
-            });
+            this.wrapPopups('Compare__popup',false);
+            this.wrapStates('compareOpen',false);
         } 
     }
 
@@ -1094,14 +1074,8 @@ export class ChartContainer extends React.PureComponent {
     {
         if(!this.state.interactiveOpen)
         {
-            $('.Interactive__popup').addClass('active');
-            $('.Indicator__popup').removeClass('active');
-            $('.Compare__popup').removeClass('active');
-            this.setState({
-                interactiveOpen : true,
-                compareOpen : false,
-                indicatorOpen : false
-            });
+            this.wrapPopups('Interactive__popup',true);
+            this.wrapStates('interactiveOpen',true);
         }
     }
 
@@ -1109,11 +1083,30 @@ export class ChartContainer extends React.PureComponent {
     {
         if(this.state.interactiveOpen)
         {
-            $('.Interactive__popup').removeClass('active');
-            this.setState({
-                interactiveOpen : false
-            });
+            this.wrapPopups('Interactive__popup',false);
+            this.wrapStates('interactiveOpen',false);
         } 
+    }
+
+
+    OpenStockPopup()
+    {
+        if(!this.state.stockOpen)
+        {
+            this.wrapPopups('Stock__popup',true);
+            this.wrapStates('stockOpen',true);
+
+            console.log('stock open')
+        }
+    }
+
+    CloseStockPopup()
+    {
+        if(this.state.stockOpen)
+        {
+            this.wrapPopups('Stock__popup',false);
+            this.wrapStates('stockOpen',false);
+        }
     }
 
     changeInteractiveType(Itype,Stype)
@@ -1202,15 +1195,79 @@ export class ChartContainer extends React.PureComponent {
     compareLimitReached()
     {
         this.CloseComparePopup();
-        $('.app__back__blur').addClass('active');
-        $('.compare__limit__popup').addClass('active');
+        // $('.app__back__blur').addClass('active');
+        Alert({Message : 'Max number of securities to compared reaches.'})
+        // $('.compare__limit__popup').addClass('active');
     }
 
     indicatorLimitReached()
     {
         this.CloseIndicatorPopup();
-        $('.app__back__blur').addClass('active');
-        $('.indicator__limit__popup').addClass('active');
+        // $('.app__back__blur').addClass('active');
+        // $('.indicator__limit__popup').addClass('active');
+        // Alert({Message : 'Max number of indicators can be used reaches.'})
+        Alert({
+            TitleText : 'Warning',
+            Message : 'Max number of indicators can be used reaches.',
+            Band : true,
+            BandColor : '#00a0e3',
+            BoxColor : '#ffffff',
+            TextColor : '#000000',
+            AutoClose : {
+                Active : false,
+                Line : true,
+                LineColor : '#00a0e3',
+                Time : 5
+            }
+        })
+
+    }
+
+    wrapPopups(popup,open)
+    {
+        const PopupArray = ['Compare__popup','Interactive__popup','Indicator__popup','Stock__popup'];
+
+        PopupArray.map((p,i)=>{
+            popup && $('.'+p).removeClass('active');
+        });
+
+        if(open)
+        {
+            $('.'+popup).addClass('active');
+            $('.app__back__blur').addClass('active');
+        }
+
+        else
+        {
+            $('.app__back__blur').removeClass('active');
+        }
+
+
+        
+
+    }
+
+    wrapStates(state,open)
+    {
+        const states = ['compareOpen','indicatorOpen','interactiveOpen','stockOpen'];
+
+        let stateobj = {};
+
+        states.map((s,i)=>{
+            stateobj[s] = false;
+        });
+
+        if(open)
+        {
+            stateobj[state] = open;
+        }
+
+
+        this.setState({
+            ...stateobj
+        });
+
+
     }
 
     render() {
@@ -1258,6 +1315,19 @@ export class ChartContainer extends React.PureComponent {
                     removeStock={this.props.removeStock}
                     RemoveFlag={this.state.RemoveFlag}
                 />
+
+
+                <StockSearchPopup 
+
+                    stockDetails={this.props.stockDetails}
+                    CloseStockPopup={this.CloseStockPopup}
+                    CompareStockConfig={this.props.CompareStockConfig}
+                    compareStock={this.props.compareStock}
+                    removeStock={this.props.removeStock}
+                    RemoveFlag={this.state.RemoveFlag}
+                    selectedStock={this.props.selectedStock}
+
+                />
     
                 <div className="Interactive__popup">
                     <div className="Interactive__title__name">
@@ -1301,12 +1371,10 @@ export class ChartContainer extends React.PureComponent {
     
                     <div className="chart__container__stock__options">
                         <div className="chart__options">
-                            <div className="chart__option__block chart__stock__name" >
-                                <span>RELIANCE</span>
+                            <div className="chart__option__block chart__stock__name" onClick={this.OpenStockPopup.bind(this)}>
+                                <span>{stockName}</span>
                             </div>
-                            <div className="chart__option__block">
-                                <span>D</span>
-                            </div>
+                            
                             <div className="chart__option__block chart__stock__type__change" onClick={this.ToggleChartType.bind(this)}>
                                 <span><img src={this.state.chartTypeIcon} alt="C" id="chart__type__icon"/></span>
                                 <div className="stock__chart__types">
@@ -1319,9 +1387,7 @@ export class ChartContainer extends React.PureComponent {
                                     <div data-chart="ohlc" onClick={this.changeChart.bind(this,'ohlc')}><img src={OHLC} alt="+"/><span>OHLC</span></div>
                                     <div data-chart="marker" onClick={this.changeChart.bind(this,'marker')}><img src={Marker} alt="+"/><span>Marker</span></div>
                                     <div data-chart="stick" onClick={this.changeChart.bind(this,'stick')}><img src={Stick} alt="+"/><span>Stick</span></div>
-                                    {/* <div data-chart="renko" onClick={this.changeChart.bind(this,'renko')}><img src={Renko} alt="+"/><span>Renko</span></div>
-                                    <div data-chart="kagi" onClick={this.changeChart.bind(this,'kagi')}><img src={Kagi} alt="+"/><span>Kagi</span></div>
-                                    <div data-chart="point" onClick={this.changeChart.bind(this,'point')}><img src={Point} alt="+"/><span>Point & Figure</span></div> */}
+                                    
                                 </div>
                             </div>
                             <div className="chart__option__block" onClick={this.OpenComparePopup.bind(this)}>

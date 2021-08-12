@@ -30,7 +30,9 @@ export function renderSVG(props) {
 	}
 	if (isDefined(edge.coordinateBase)) {
 
-		const { rectWidth, rectHeight } = edge.coordinateBase;
+		const { rectWidth, rectHeight , rectRadius } = edge.coordinateBase;
+
+		console.log(edge.coordinateBase);
 		
 
 		coordinateBase =
@@ -48,6 +50,7 @@ export function renderSVG(props) {
 						width={rectWidth}
 						fill={edge.coordinateBase.fill}
 						opacity={edge.coordinateBase.opacity}
+						rx={rectRadius}
 					/>
 				</g>
 			) : (
@@ -60,6 +63,7 @@ export function renderSVG(props) {
 					width={rectWidth}
 					fill={edge.coordinateBase.fill}
 					opacity={edge.coordinateBase.opacity}
+					rx={rectRadius}
 				/>
 			);
 
